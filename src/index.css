@@ -301,9 +301,96 @@
   }
 }
 
+/* Estilos específicos para tema Oscuro */
+.theme-dark {
+  background-color: var(--color-background) !important;
+  color: var(--color-text) !important;
+}
+
+.theme-dark * {
+  color: inherit;
+}
+
+.theme-dark h1,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark h4,
+.theme-dark h5,
+.theme-dark h6 {
+  color: #ffffff !important;
+}
+
+.theme-dark p,
+.theme-dark span,
+.theme-dark div,
+.theme-dark label {
+  color: var(--color-text) !important;
+}
+
+.theme-dark .text-gray-900,
+.theme-dark .text-gray-800,
+.theme-dark .text-gray-700,
+.theme-dark .text-gray-600 {
+  color: #ffffff !important;
+}
+
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-400 {
+  color: var(--color-text-secondary) !important;
+}
+
+.theme-dark .card {
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
+  color: #ffffff !important;
+}
+
+.theme-dark input,
+.theme-dark textarea,
+.theme-dark select {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: #ffffff !important;
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: var(--color-text-secondary) !important;
+  opacity: 0.7;
+}
+
 /* Estilos específicos para tema Hacker */
 .theme-hacker {
   background-color: #000000 !important;
+  color: #00ff00 !important;
+}
+
+.theme-hacker * {
+  color: inherit;
+}
+
+.theme-hacker h1,
+.theme-hacker h2,
+.theme-hacker h3,
+.theme-hacker h4,
+.theme-hacker h5,
+.theme-hacker h6 {
+  color: #00ff00 !important;
+}
+
+.theme-hacker p,
+.theme-hacker span,
+.theme-hacker div,
+.theme-hacker label {
+  color: #00ff00 !important;
+}
+
+.theme-hacker .text-gray-900,
+.theme-hacker .text-gray-800,
+.theme-hacker .text-gray-700,
+.theme-hacker .text-gray-600,
+.theme-hacker .text-gray-500,
+.theme-hacker .text-gray-400 {
   color: #00ff00 !important;
 }
 
@@ -330,8 +417,8 @@
 }
 
 .theme-hacker ::placeholder {
-  color: #00cc00 !important;
-  opacity: 0.6;
+  color: #00ff88 !important;
+  opacity: 0.7;
 }
 
 /* Efecto de terminal para tema hacker */
@@ -357,6 +444,118 @@
 .theme-hacker > * {
   position: relative;
   z-index: 1;
+}
+
+/* Mejorar visibilidad de botones en temas oscuros */
+.theme-dark button,
+.theme-dark .btn-primary,
+.theme-dark .btn-secondary {
+  color: #ffffff !important;
+}
+
+.theme-dark button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600) {
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+  color: #ffffff !important;
+}
+
+.theme-hacker button,
+.theme-hacker .btn-primary,
+.theme-hacker .btn-secondary {
+  color: #00ff00 !important;
+  border-color: #00ff00 !important;
+}
+
+.theme-hacker button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600) {
+  background-color: #0a0a0a !important;
+  border-color: #00ff00 !important;
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de enlaces */
+.theme-dark a {
+  color: #60a5fa !important;
+}
+
+.theme-dark a:hover {
+  color: #93c5fd !important;
+}
+
+.theme-hacker a {
+  color: #00ff88 !important;
+}
+
+.theme-hacker a:hover {
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de tablas */
+.theme-dark table,
+.theme-dark th,
+.theme-dark td {
+  color: #ffffff !important;
+  border-color: var(--color-border) !important;
+}
+
+.theme-hacker table,
+.theme-hacker th,
+.theme-hacker td {
+  color: #00ff00 !important;
+  border-color: #00ff00 !important;
+}
+
+/* Sobrescribir clases de Tailwind para temas oscuros */
+.theme-dark .text-gray-50,
+.theme-dark .text-gray-100,
+.theme-dark .text-gray-200,
+.theme-dark .text-gray-300,
+.theme-dark .text-gray-400,
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-600,
+.theme-dark .text-gray-700,
+.theme-dark .text-gray-800,
+.theme-dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-400 {
+  color: var(--color-text-secondary) !important;
+}
+
+.theme-hacker .text-gray-50,
+.theme-hacker .text-gray-100,
+.theme-hacker .text-gray-200,
+.theme-hacker .text-gray-300,
+.theme-hacker .text-gray-400,
+.theme-hacker .text-gray-500,
+.theme-hacker .text-gray-600,
+.theme-hacker .text-gray-700,
+.theme-hacker .text-gray-800,
+.theme-hacker .text-gray-900 {
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de iconos */
+.theme-dark svg:not([class*="text-"]) {
+  color: #ffffff !important;
+}
+
+.theme-hacker svg:not([class*="text-"]) {
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de labels y textos pequeños */
+.theme-dark label,
+.theme-dark .text-xs,
+.theme-dark .text-sm {
+  color: #ffffff !important;
+}
+
+.theme-hacker label,
+.theme-hacker .text-xs,
+.theme-hacker .text-sm {
+  color: #00ff00 !important;
 }
 
 @layer components {

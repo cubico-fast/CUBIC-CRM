@@ -360,10 +360,10 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col gap-3 md:gap-4 w-full">
         <div className="w-full">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">Dashboard</h1>
-          <p className="text-sm md:text-base text-gray-600 mt-1">Panel de control y estadísticas</p>
+          <h1 className="text-2xl md:text-3xl font-bold break-words" style={{ color: 'var(--color-text)' }}>Dashboard</h1>
+          <p className="text-sm md:text-base mt-1" style={{ color: 'var(--color-text-secondary)' }}>Panel de control y estadísticas</p>
         </div>
-        <div className="flex items-center space-x-2 text-xs md:text-sm text-gray-600">
+        <div className="flex items-center space-x-2 text-xs md:text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           <Calendar size={16} className="md:w-[18px] md:h-[18px]" />
           <span className="break-words">Usted tiene hasta el {getFechaLimite()}</span>
         </div>
@@ -374,7 +374,7 @@ const Dashboard = () => {
         <div className="flex flex-col gap-4 md:gap-6 w-full">
           {/* Filtros */}
           <div className="w-full">
-            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
               Período
             </label>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 w-full">
@@ -423,7 +423,7 @@ const Dashboard = () => {
                 />
               </div>
               <div className="flex-1 w-full min-w-0">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
                   Ubicaciones
                 </label>
                 <select
@@ -453,9 +453,9 @@ const Dashboard = () => {
           {/* Resumen de ventas */}
           <div className="w-full pt-3 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-0">
             <div className="text-left md:text-right">
-              <p className="text-xs md:text-sm text-gray-600 mb-1">Total de ventas en el período</p>
-              <p className="text-xl md:text-2xl font-bold text-primary-600 break-words">{formatCurrency(totalVentas)}</p>
-              <p className="text-xs text-gray-500 mt-1">{ventasFiltradas.length} venta(s)</p>
+            <p className="text-xs md:text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>Total de ventas en el período</p>
+            <p className="text-xl md:text-2xl font-bold text-primary-600 break-words">{formatCurrency(totalVentas)}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>{ventasFiltradas.length} venta(s)</p>
             </div>
           </div>
         </div>
@@ -471,7 +471,7 @@ const Dashboard = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" ref={calendarRef} onClick={(e) => e.stopPropagation()}>
             <div className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Seleccionar Período</h3>
+                <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Seleccionar Período</h3>
                 <button
                   onClick={() => setShowCalendar(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -490,7 +490,7 @@ const Dashboard = () => {
                     >
                       <ChevronLeft size={20} />
                     </button>
-                    <h4 className="text-sm font-semibold text-gray-900">
+                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                       {format(currentMonthLeft, 'MMMM yyyy', { locale: es })}
                     </h4>
                     <button
@@ -533,7 +533,7 @@ const Dashboard = () => {
                     >
                       <ChevronLeft size={20} />
                     </button>
-                    <h4 className="text-sm font-semibold text-gray-900">
+                    <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                       {format(currentMonthRight, 'MMMM yyyy', { locale: es })}
                     </h4>
                     <button
@@ -608,8 +608,8 @@ const Dashboard = () => {
                 </div>
                 <div className="text-center flex-1 min-w-0 w-full">
                   <p className={`text-[10px] md:text-xs font-medium ${stat.textColor} mb-1 break-words`}>{stat.title}</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-[10px] md:text-xs text-gray-500">{stat.label}</p>
+                  <p className="text-lg md:text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{stat.value}</p>
+                  <p className="text-[10px] md:text-xs" style={{ color: 'var(--color-text-secondary)' }}>{stat.label}</p>
                 </div>
               </div>
             </div>
@@ -621,7 +621,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Ventas por Vendedor - Gráfico Horizontal */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ventas por Vendedor</h3>
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Ventas por Vendedor</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={ventasPorVendedorData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -642,7 +642,7 @@ const Dashboard = () => {
 
         {/* Ventas por Tipo de Comprobante - Gráfico Horizontal */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ventas por Tipo de Comprobante</h3>
+          <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Ventas por Tipo de Comprobante</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={ventasPorTipoData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -670,15 +670,15 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Resumen de Comprobantes */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Comprobantes</h3>
+                <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Resumen de Comprobantes</h3>
           <div className="space-y-3">
             {resumenComprobantes.map((item, index) => (
               <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{item.tipo}</p>
-                  <p className="text-xs text-gray-500">({item.cantidad})</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{item.tipo}</p>
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>({item.cantidad})</p>
                 </div>
-                <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.total)}</p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>{formatCurrency(item.total)}</p>
               </div>
             ))}
           </div>
@@ -686,7 +686,7 @@ const Dashboard = () => {
 
         {/* Ventas y Compras - Gráfico Vertical */}
         <div className="card lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Ventas y Compras</h3>
+          <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Ventas y Compras</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={ventasComprasData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -713,7 +713,7 @@ const Dashboard = () => {
       {/* Resumen de Comprobantes no enviados a SUNAT */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Resumen: Comprobantes no enviados a SUNAT</h3>
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Resumen: Comprobantes no enviados a SUNAT</h3>
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
             Ver Comprobantes
           </button>
@@ -722,20 +722,20 @@ const Dashboard = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha de emisión</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Días de retraso</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Relación de comprobantes</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase" style={{ color: 'var(--color-text-secondary)' }}>Fecha de emisión</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase" style={{ color: 'var(--color-text-secondary)' }}>Días de retraso</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase" style={{ color: 'var(--color-text-secondary)' }}>Relación de comprobantes</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               <tr>
-                <td className="px-4 py-3 text-sm text-gray-900">{formatDate(currentDate)}</td>
+                <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text)' }}>{formatDate(currentDate)}</td>
                 <td className="px-4 py-3">
                   <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
                     0 días
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
+                <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text)' }}>
                   <span className="mr-2">0 FA</span>
                   <span className="mr-2">0 BO</span>
                   <span className="mr-2">0 NC</span>
