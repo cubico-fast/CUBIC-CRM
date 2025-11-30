@@ -762,11 +762,9 @@ const RealizarVenta = () => {
         </nav>
       </div>
 
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)]">
-        {/* Contenedor único en móvil, dos columnas en desktop */}
-        <div className="flex flex-col lg:flex-row w-full h-full overflow-y-auto lg:overflow-hidden">
-          {/* Sección Izquierda - Detalles de Venta */}
-          <div className="flex-1 bg-white border-r-0 lg:border-r border-gray-200 p-4 sm:p-6 lg:overflow-y-auto w-full">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-180px)] overflow-y-auto">
+        {/* Sección Izquierda - Detalles de Venta */}
+        <div className="flex-1 bg-white border-r-0 lg:border-r border-gray-200 p-4 sm:p-6 w-full">
             <div className="space-y-4">
             {/* Local y Almacén */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -1318,9 +1316,10 @@ const RealizarVenta = () => {
               )}
             </div>
           </div>
+        </div>
 
-          {/* Sección Derecha - Facturación Electrónica */}
-          <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6 lg:overflow-y-auto">
+        {/* Sección Derecha - Facturación Electrónica */}
+        <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">FACTURACION ELECTRONICA</h3>
           
           <div className="space-y-3">
