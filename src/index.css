@@ -366,6 +366,15 @@
   opacity: 0.8;
 }
 
+/* Forzar que inputs con clases específicas también sigan el tema */
+.theme-dark input[class*="bg-gray"],
+.theme-dark input[class*="bg-white"],
+.theme-dark select[class*="bg-gray"],
+.theme-dark select[class*="bg-white"] {
+  background-color: var(--color-surface) !important;
+  color: #ffffff !important;
+}
+
 /* Estilos específicos para tema Hacker - TODO verde sobre negro */
 .theme-hacker {
   background-color: #000000 !important;
@@ -436,6 +445,16 @@
 .theme-hacker ::placeholder {
   color: #00ff88 !important;
   opacity: 0.7;
+}
+
+/* Forzar que inputs con clases específicas también sigan el tema */
+.theme-hacker input[class*="bg-gray"],
+.theme-hacker input[class*="bg-white"],
+.theme-hacker select[class*="bg-gray"],
+.theme-hacker select[class*="bg-white"] {
+  background-color: #0a0a0a !important;
+  color: #00ff00 !important;
+  border-color: #00ff00 !important;
 }
 
 /* Efecto de terminal para tema hacker */
@@ -751,6 +770,60 @@
 .theme-hacker [class*="bg-slate"]:not([class*="bg-slate-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-700"]),
 .theme-hacker [class*="bg-zinc"]:not([class*="bg-zinc-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-700"]) {
   background-color: #0a0a0a !important;
+}
+
+/* Forzar que TODOS los bg-white y bg-gray-50 sigan el tema */
+.theme-dark .bg-white,
+.theme-dark .bg-gray-50,
+.theme-dark .bg-gray-100,
+.theme-dark .bg-gray-200 {
+  background-color: var(--color-surface) !important;
+}
+
+.theme-hacker .bg-white,
+.theme-hacker .bg-gray-50,
+.theme-hacker .bg-gray-100,
+.theme-hacker .bg-gray-200 {
+  background-color: #0a0a0a !important;
+}
+
+/* Forzar hover states también */
+.theme-dark .hover\:bg-gray-50:hover,
+.theme-dark .hover\:bg-gray-100:hover {
+  background-color: #334155 !important;
+}
+
+.theme-hacker .hover\:bg-gray-50:hover,
+.theme-hacker .hover\:bg-gray-100:hover {
+  background-color: #0f0f0f !important;
+}
+
+/* Forzar que los bordes también sigan el tema */
+.theme-dark .border-gray-200,
+.theme-dark .border-gray-300 {
+  border-color: var(--color-border) !important;
+}
+
+.theme-hacker .border-gray-200,
+.theme-hacker .border-gray-300 {
+  border-color: #00ff00 !important;
+}
+
+/* Forzar visibilidad de texto en todos los elementos */
+.theme-dark .text-gray-700,
+.theme-dark .text-gray-600,
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-400,
+.theme-dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+.theme-hacker .text-gray-700,
+.theme-hacker .text-gray-600,
+.theme-hacker .text-gray-500,
+.theme-hacker .text-gray-400,
+.theme-hacker .text-gray-900 {
+  color: #00ff00 !important;
 }
 
 @layer components {

@@ -754,17 +754,17 @@ const RealizarVenta = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 w-full" style={{ width: '100%', maxWidth: '100%' }}>
+    <div className="min-h-screen pb-20 w-full" style={{ width: '100%', maxWidth: '100%', backgroundColor: 'var(--color-background)' }}>
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
-        <nav className="text-sm text-gray-600">
-          <span className="text-gray-900">Ventas</span> / <span className="text-primary-600">Realizar venta</span>
+      <div className="border-b px-4 sm:px-6 py-3" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+        <nav className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          <span style={{ color: 'var(--color-text)' }}>Ventas</span> / <span style={{ color: 'var(--color-text)' }}>Realizar venta</span>
         </nav>
       </div>
 
       <div className="flex flex-col lg:flex-row overflow-y-auto" style={{ height: 'calc(100vh - 180px)' }}>
         {/* Sección Izquierda - Detalles de Venta */}
-        <div className="flex-1 bg-white border-r-0 lg:border-r border-gray-200 p-4 sm:p-6 w-full">
+        <div className="flex-1 border-r-0 lg:border-r p-4 sm:p-6 w-full" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
             <div className="space-y-4">
             {/* Local y Almacén */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -844,7 +844,7 @@ const RealizarVenta = () => {
                     
                     {/* Lista de Sugerencias de Clientes */}
                     {mostrarSugerenciasCliente && clientesSugeridos.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-80 overflow-y-auto" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                         {clientesSugeridos.map((cliente, index) => (
                           <div
                             key={cliente.id}
@@ -884,8 +884,8 @@ const RealizarVenta = () => {
 
                     {/* Mensaje cuando no hay resultados */}
                     {mostrarSugerenciasCliente && busquedaCliente.trim() !== '' && clientesSugeridos.length === 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
-                        <p className="text-sm text-gray-500 text-center">
+                      <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg p-4" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                        <p className="text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
                           No se encontraron clientes que coincidan con "{busquedaCliente}"
                         </p>
                       </div>
@@ -940,7 +940,7 @@ const RealizarVenta = () => {
 
                 {/* Lista de Sugerencias */}
                 {mostrarSugerencias && productosSugeridos.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-80 overflow-y-auto" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                     {productosSugeridos.map((producto, index) => (
                       <div
                         key={producto.id}
@@ -993,12 +993,12 @@ const RealizarVenta = () => {
 
                 {/* Mensaje cuando no hay resultados */}
                 {mostrarSugerencias && busquedaProducto.trim() !== '' && productosSugeridos.length === 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
-                    <p className="text-sm text-gray-500 text-center">
-                      No se encontraron productos que coincidan con "{busquedaProducto}"
-                    </p>
-                  </div>
-                )}
+                  <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg p-4" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                        <p className="text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
+                          No se encontraron productos que coincidan con "{busquedaProducto}"
+                        </p>
+                      </div>
+                    )}
               </div>
             </div>
 
@@ -1319,7 +1319,7 @@ const RealizarVenta = () => {
         </div>
 
         {/* Sección Derecha - Facturación Electrónica */}
-        <div className="w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-6">
+        <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l p-4 sm:p-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">FACTURACION ELECTRONICA</h3>
           
           <div className="space-y-3">
@@ -1534,7 +1534,7 @@ const RealizarVenta = () => {
       </div>
 
       {/* Footer con botones */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-100 border-t border-gray-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="fixed bottom-0 left-0 right-0 border-t px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
             onClick={handleGuardar}
