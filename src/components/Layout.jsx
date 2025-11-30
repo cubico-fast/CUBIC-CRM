@@ -29,7 +29,13 @@ const Layout = ({ children }) => {
   return (
     <div 
       className="flex h-screen w-full relative overflow-hidden transition-colors duration-300"
-      style={{ backgroundColor: 'var(--color-background)', width: '100%', maxWidth: '100vw' }}
+      style={{ 
+        backgroundColor: 'var(--color-background)', 
+        width: '100%', 
+        maxWidth: '100vw',
+        minWidth: 0,
+        position: 'relative'
+      }}
     >
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       
@@ -45,10 +51,26 @@ const Layout = ({ children }) => {
         </button>
       )}
       
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
         <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6 w-full max-w-full" style={{ width: '100%', maxWidth: '100%' }}>
-          <div className="w-full max-w-full overflow-x-hidden" style={{ width: '100%' }}>
+        <main 
+          className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6 w-full" 
+          style={{ 
+            width: '100%', 
+            maxWidth: '100%', 
+            minWidth: 0,
+            boxSizing: 'border-box'
+          }}
+        >
+          <div 
+            className="w-full overflow-x-hidden" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box'
+            }}
+          >
             {children}
           </div>
         </main>

@@ -346,7 +346,15 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 w-full" style={{ width: '100%', maxWidth: '100%' }}>
+    <div 
+      className="space-y-4 md:space-y-6 w-full" 
+      style={{ 
+        width: '100%', 
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Header */}
       <div className="flex flex-col gap-3 md:gap-4 w-full">
         <div className="w-full">
