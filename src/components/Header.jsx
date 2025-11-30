@@ -47,7 +47,7 @@ const Header = ({ toggleSidebar }) => {
         <div className="flex items-center space-x-2 md:space-x-4">
           <button
             onClick={toggleSidebar}
-            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition-colors lg:hidden"
+            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition-colors"
             title="Mostrar/Ocultar menú"
             aria-label="Toggle menu"
           >
