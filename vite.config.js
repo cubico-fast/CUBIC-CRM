@@ -8,6 +8,6 @@ export default defineConfig({
     open: true
   },
   // Configuración para GitHub Pages
-  base: import.meta.env.VITE_BASE_PATH || '/CUBIC-CRM/'
+  base: process.env.VITE_BASE_PATH || '/CUBIC-CRM/'
 })
 

@@ -17,10 +17,28 @@ import Marketing from './pages/Marketing'
 import ConfiguracionMarketing from './pages/ConfiguracionMarketing'
 
 function App() {
+  // Obtener el base path desde la variable de entorno o usar el pathname actual
+  const getBasePath = () => {
+    // Si estamos en GitHub Pages, usar el pathname base
+    if (import.meta.env.VITE_BASE_PATH) {
+      return import.meta.env.VITE_BASE_PATH
+    }
+    // Detectar si estamos en GitHub Pages por la URL
+    if (window.location.hostname.includes('github.io')) {
+      const pathParts = window.location.pathname.split('/')
+      if (pathParts.length > 1 && pathParts[1]) {
+        return `/${pathParts[1]}/`
+      }
+    }
+    return '/'
+  }
+
+  const basePath = getBasePath()
+
   return (
     <ThemeProvider>
       <CurrencyProvider>
-        <Router>
+        <Router basename={basePath}>
           <Layout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
