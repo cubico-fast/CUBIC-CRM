@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
 import { CurrencyProvider } from './contexts/CurrencyContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
@@ -25,15 +26,49 @@ function App() {
     }
     // Detectar si estamos en GitHub Pages por la URL
     if (window.location.hostname.includes('github.io')) {
-      const pathParts = window.location.pathname.split('/')
-      if (pathParts.length > 1 && pathParts[1]) {
-        return `/${pathParts[1]}/`
+      const pathParts = window.location.pathname.split('/').filter(p => p)
+      if (pathParts.length > 0 && pathParts[0] !== '') {
+        return `/${pathParts[0]}/`
       }
     }
     return '/'
   }
 
   const basePath = getBasePath()
+
+  // Asegurar que el viewport se aplique correctamente en móvil
+  useEffect(() => {
+    const setViewport = () => {
+      const viewport = document.querySelector('meta[name="viewport"]')
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover')
+      }
+      
+      // Forzar ancho en móvil
+      if (window.innerWidth <= 768) {
+        document.documentElement.style.width = '100%'
+        document.documentElement.style.maxWidth = '100%'
+        document.body.style.width = '100%'
+        document.body.style.maxWidth = '100vw'
+        const root = document.getElementById('root')
+        if (root) {
+          root.style.width = '100%'
+          root.style.maxWidth = '100vw'
+        }
+      }
+    }
+    
+    setViewport()
+    window.addEventListener('resize', setViewport)
+    window.addEventListener('orientationchange', () => {
+      setTimeout(setViewport, 100)
+    })
+    
+    return () => {
+      window.removeEventListener('resize', setViewport)
+      window.removeEventListener('orientationchange', setViewport)
+    }
+  }, [])
 
   return (
     <ThemeProvider>

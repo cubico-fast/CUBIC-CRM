@@ -1,0 +1,6 @@
+# Forzar viewport correcto en móvil
+<IfModule mod_headers.c>
+  Header set X-UA-Compatible "IE=edge"
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</IfModule>
+
