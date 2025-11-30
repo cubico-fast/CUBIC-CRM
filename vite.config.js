@@ -46,7 +46,22 @@ export default defineConfig({
         try {
           let indexContent = readFileSync(indexPath, 'utf-8')
           
-          // Agregar el script de ajuste de URL antes del cierre de </head>
+          // Ajustar las rutas de los assets para que funcionen desde cualquier ruta
+          // Reemplazar rutas absolutas que empiezan con /assets/ para que sean relativas o con basePath
+          const repoName = '/CUBIC-CRM'
+          indexContent = indexContent.replace(
+            /(src|href)="\/(assets\/[^"]+)"/g,
+            (match, attr, path) => {
+              // Si el basePath incluye el repo, mantener la ruta absoluta con el prefijo
+              if (basePath.includes('CUBIC-CRM')) {
+                return `${attr}="${basePath}${path.substring(1)}"`
+              }
+              // Si no, usar ruta relativa desde la raíz
+              return `${attr}="${path}"`
+            }
+          )
+          
+          // Agregar el script de ajuste de URL ANTES de los assets para que se ejecute primero
           const urlFixScript = `
     <script>
       // Ajustar la URL antes de que React Router la maneje
@@ -82,8 +97,12 @@ export default defineConfig({
       })();
     </script>`
           
-          // Insertar el script antes del cierre de </head>
-          indexContent = indexContent.replace('</head>', urlFixScript + '\n  </head>')
+          // Insertar el script ANTES de los scripts de assets (después del script de OAuth)
+          // Buscar el patrón de los scripts de assets y insertar antes
+          indexContent = indexContent.replace(
+            /(<script type="module"[^>]*src="[^"]*assets[^"]*">)/,
+            urlFixScript + '\n    $1'
+          )
           
           // Escribir el archivo 404.html
           writeFileSync(notFoundPath, indexContent, 'utf-8')
