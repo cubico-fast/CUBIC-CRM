@@ -181,3 +181,4 @@ Este proyecto es privado y de uso exclusivo.
 ---
 
 Desarrollado con ❤️ usando React y Vite
+"# CUBIC-CRM" 
