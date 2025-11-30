@@ -61,18 +61,22 @@ export default defineConfig({
             }
           )
           
-          // Agregar el script de ajuste de URL ANTES de los assets para que se ejecute primero
+          // Agregar el script de ajuste de URL INMEDIATAMENTE después de <head> para que se ejecute primero
+          // Este script debe ejecutarse de forma síncrona antes de cualquier otro script
           const urlFixScript = `
     <script>
-      // Ajustar la URL antes de que React Router la maneje
+      // Ajustar la URL INMEDIATAMENTE antes de que se cargue cualquier cosa
+      // Este script debe ejecutarse de forma síncrona y bloqueante
       (function() {
         var path = window.location.pathname;
         var search = window.location.search;
         var hash = window.location.hash;
+        var originalPath = path;
         
         // Detectar si estamos en GitHub Pages
         var isGitHubPages = window.location.hostname.includes('github.io');
         var repoName = '/CUBIC-CRM';
+        var basePath = isGitHubPages ? repoName : '';
         
         // Remover '/404.html' si está presente
         path = path.replace('/404.html', '');
@@ -87,21 +91,29 @@ export default defineConfig({
           path = '/';
         }
         
-        // Construir la nueva URL sin recargar la página
-        var newPath = path + search + hash;
+        // Construir la nueva URL completa con el basePath
+        var newPath = basePath + path + search + hash;
         
+        // Si la ruta actual es diferente a la nueva, ajustarla
         // Usar history.replaceState para cambiar la URL sin recargar
         if (window.history && window.history.replaceState) {
-          window.history.replaceState(null, '', newPath);
+          try {
+            // Si la ruta actual no coincide con la nueva, ajustarla
+            if (originalPath !== newPath && !originalPath.includes('404.html')) {
+              window.history.replaceState(null, '', newPath);
+            }
+          } catch (e) {
+            // Si falla, intentar redirección completa (último recurso)
+            console.warn('Error al ajustar URL:', e);
+          }
         }
       })();
     </script>`
           
-          // Insertar el script ANTES de los scripts de assets (después del script de OAuth)
-          // Buscar el patrón de los scripts de assets y insertar antes
+          // Insertar el script INMEDIATAMENTE después de <head> para máxima prioridad
           indexContent = indexContent.replace(
-            /(<script type="module"[^>]*src="[^"]*assets[^"]*">)/,
-            urlFixScript + '\n    $1'
+            /(<head[^>]*>)/,
+            '$1' + urlFixScript
           )
           
           // Escribir el archivo 404.html
