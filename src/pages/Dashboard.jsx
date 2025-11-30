@@ -346,10 +346,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 w-full" style={{ width: '100%', maxWidth: '100%' }}>
       {/* Header */}
-      <div className="flex flex-col gap-3 md:gap-4">
-        <div>
+      <div className="flex flex-col gap-3 md:gap-4 w-full">
+        <div className="w-full">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">Dashboard</h1>
           <p className="text-sm md:text-base text-gray-600 mt-1">Panel de control y estadísticas</p>
         </div>
