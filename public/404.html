@@ -67,20 +67,22 @@
         var isGitHubPages = window.location.hostname.includes('github.io');
         var repoName = '/CUBIC-CRM';
         
+        // Remover '/404.html' si está presente
+        path = path.replace('/404.html', '');
+        
         // Si estamos en GitHub Pages y la ruta incluye el nombre del repo, removerlo
+        // Esto es necesario porque React Router espera la ruta sin el prefijo del repo
         if (isGitHubPages && path.startsWith(repoName)) {
           path = path.substring(repoName.length);
         }
         
-        // Remover '/404.html' si está presente
-        path = path.replace('/404.html', '');
-        
-        // Si la ruta está vacía, usar '/'
-        if (!path || path === '/') {
+        // Si la ruta está vacía o es solo '/', usar '/'
+        if (!path || path === '/' || path === repoName || path === repoName + '/') {
           path = '/';
         }
         
         // Construir la nueva URL sin recargar la página
+        // React Router manejará la ruta correctamente con el basePath configurado
         var newPath = path + search + hash;
         
         // Usar history.replaceState para cambiar la URL sin recargar
@@ -117,6 +119,31 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- Los scripts se inyectarán automáticamente durante el build -->
+    <script>
+      // Cargar los scripts del index.html compilado
+      // Esto se reemplazará durante el build con los scripts reales
+      var scripts = document.querySelectorAll('script[type="module"][src*="index"]');
+      if (scripts.length === 0) {
+        // Si no hay scripts, buscar en el index.html y copiarlos
+        fetch('/index.html')
+          .then(response => response.text())
+          .then(html => {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var scripts = doc.querySelectorAll('script[type="module"], link[rel="stylesheet"]');
+            scripts.forEach(function(script) {
+              document.head.appendChild(script.cloneNode(true));
+            });
+          })
+          .catch(function() {
+            // Fallback: intentar cargar desde assets
+            var script = document.createElement('script');
+            script.type = 'module';
+            script.src = '/assets/index.js';
+            document.body.appendChild(script);
+          });
+      }
+    </script>
   </body>
 </html>
