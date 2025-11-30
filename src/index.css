@@ -301,14 +301,14 @@
   }
 }
 
-/* Estilos específicos para tema Oscuro */
+/* Estilos específicos para tema Oscuro - TODO gris/blanco sobre fondo oscuro */
 .theme-dark {
   background-color: var(--color-background) !important;
-  color: var(--color-text) !important;
+  color: #ffffff !important;
 }
 
-.theme-dark * {
-  color: inherit;
+.theme-dark *:not(svg):not(path) {
+  color: #ffffff !important;
 }
 
 .theme-dark h1,
@@ -316,27 +316,34 @@
 .theme-dark h3,
 .theme-dark h4,
 .theme-dark h5,
-.theme-dark h6 {
-  color: #ffffff !important;
-}
-
+.theme-dark h6,
 .theme-dark p,
 .theme-dark span,
 .theme-dark div,
-.theme-dark label {
-  color: var(--color-text) !important;
+.theme-dark label,
+.theme-dark li,
+.theme-dark td,
+.theme-dark th {
+  color: #ffffff !important;
 }
 
 .theme-dark .text-gray-900,
 .theme-dark .text-gray-800,
 .theme-dark .text-gray-700,
-.theme-dark .text-gray-600 {
-  color: #ffffff !important;
+.theme-dark .text-gray-600,
+.theme-dark .text-gray-500,
+.theme-dark .text-gray-400,
+.theme-dark .text-gray-300,
+.theme-dark .text-gray-200,
+.theme-dark .text-gray-100 {
+  color: #e2e8f0 !important;
 }
 
-.theme-dark .text-gray-500,
-.theme-dark .text-gray-400 {
-  color: var(--color-text-secondary) !important;
+.theme-dark .text-primary-600,
+.theme-dark .text-primary-700,
+.theme-dark .text-blue-600,
+.theme-dark .text-blue-700 {
+  color: #60a5fa !important;
 }
 
 .theme-dark .card {
@@ -355,18 +362,18 @@
 
 .theme-dark input::placeholder,
 .theme-dark textarea::placeholder {
-  color: var(--color-text-secondary) !important;
-  opacity: 0.7;
+  color: #94a3b8 !important;
+  opacity: 0.8;
 }
 
-/* Estilos específicos para tema Hacker */
+/* Estilos específicos para tema Hacker - TODO verde sobre negro */
 .theme-hacker {
   background-color: #000000 !important;
   color: #00ff00 !important;
 }
 
-.theme-hacker * {
-  color: inherit;
+.theme-hacker *:not(svg):not(path) {
+  color: #00ff00 !important;
 }
 
 .theme-hacker h1,
@@ -374,14 +381,14 @@
 .theme-hacker h3,
 .theme-hacker h4,
 .theme-hacker h5,
-.theme-hacker h6 {
-  color: #00ff00 !important;
-}
-
+.theme-hacker h6,
 .theme-hacker p,
 .theme-hacker span,
 .theme-hacker div,
-.theme-hacker label {
+.theme-hacker label,
+.theme-hacker li,
+.theme-hacker td,
+.theme-hacker th {
   color: #00ff00 !important;
 }
 
@@ -390,7 +397,17 @@
 .theme-hacker .text-gray-700,
 .theme-hacker .text-gray-600,
 .theme-hacker .text-gray-500,
-.theme-hacker .text-gray-400 {
+.theme-hacker .text-gray-400,
+.theme-hacker .text-gray-300,
+.theme-hacker .text-gray-200,
+.theme-hacker .text-gray-100 {
+  color: #00ff00 !important;
+}
+
+.theme-hacker .text-primary-600,
+.theme-hacker .text-primary-700,
+.theme-hacker .text-blue-600,
+.theme-hacker .text-blue-700 {
   color: #00ff00 !important;
 }
 
@@ -446,47 +463,61 @@
   z-index: 1;
 }
 
-/* Mejorar visibilidad de botones en temas oscuros */
+/* Mejorar visibilidad de botones en temas oscuros - TODO gris/blanco */
 .theme-dark button,
 .theme-dark .btn-primary,
-.theme-dark .btn-secondary {
+.theme-dark .btn-secondary,
+.theme-dark [role="button"] {
   color: #ffffff !important;
 }
 
-.theme-dark button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600) {
+.theme-dark button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-yellow-500) {
   background-color: var(--color-surface) !important;
   border-color: var(--color-border) !important;
   color: #ffffff !important;
 }
 
+.theme-dark button:hover:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-yellow-500) {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* Mejorar visibilidad de botones en tema hacker - TODO verde */
 .theme-hacker button,
 .theme-hacker .btn-primary,
-.theme-hacker .btn-secondary {
+.theme-hacker .btn-secondary,
+.theme-hacker [role="button"] {
   color: #00ff00 !important;
   border-color: #00ff00 !important;
 }
 
-.theme-hacker button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600) {
+.theme-hacker button:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-yellow-500) {
   background-color: #0a0a0a !important;
   border-color: #00ff00 !important;
   color: #00ff00 !important;
 }
 
-/* Mejorar visibilidad de enlaces */
+.theme-hacker button:hover:not(.bg-primary-600):not(.bg-green-600):not(.bg-blue-600):not(.bg-red-600):not(.bg-yellow-500) {
+  background-color: #0f0f0f !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.4) !important;
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de enlaces - TODO gris/blanco en oscuro, verde en hacker */
 .theme-dark a {
-  color: #60a5fa !important;
+  color: #e2e8f0 !important;
 }
 
 .theme-dark a:hover {
-  color: #93c5fd !important;
+  color: #ffffff !important;
 }
 
 .theme-hacker a {
-  color: #00ff88 !important;
+  color: #00ff00 !important;
 }
 
 .theme-hacker a:hover {
-  color: #00ff00 !important;
+  color: #00ff88 !important;
 }
 
 /* Mejorar visibilidad de tablas */
@@ -504,7 +535,8 @@
   border-color: #00ff00 !important;
 }
 
-/* Sobrescribir clases de Tailwind para temas oscuros */
+/* Sobrescribir TODAS las clases de Tailwind para temas oscuros - MÁS AGRESIVO */
+/* Tema Oscuro: TODO gris/blanco */
 .theme-dark .text-gray-50,
 .theme-dark .text-gray-100,
 .theme-dark .text-gray-200,
@@ -514,15 +546,60 @@
 .theme-dark .text-gray-600,
 .theme-dark .text-gray-700,
 .theme-dark .text-gray-800,
-.theme-dark .text-gray-900 {
+.theme-dark .text-gray-900,
+.theme-dark .text-slate-50,
+.theme-dark .text-slate-100,
+.theme-dark .text-slate-200,
+.theme-dark .text-slate-300,
+.theme-dark .text-slate-400,
+.theme-dark .text-slate-500,
+.theme-dark .text-slate-600,
+.theme-dark .text-slate-700,
+.theme-dark .text-slate-800,
+.theme-dark .text-slate-900,
+.theme-dark .text-zinc-50,
+.theme-dark .text-zinc-100,
+.theme-dark .text-zinc-200,
+.theme-dark .text-zinc-300,
+.theme-dark .text-zinc-400,
+.theme-dark .text-zinc-500,
+.theme-dark .text-zinc-600,
+.theme-dark .text-zinc-700,
+.theme-dark .text-zinc-800,
+.theme-dark .text-zinc-900 {
+  color: #e2e8f0 !important;
+}
+
+.theme-dark .text-black,
+.theme-dark .text-white {
   color: #ffffff !important;
 }
 
-.theme-dark .text-gray-500,
-.theme-dark .text-gray-400 {
-  color: var(--color-text-secondary) !important;
+/* Colores primarios y azules en tema oscuro -> gris/blanco */
+.theme-dark .text-primary-50,
+.theme-dark .text-primary-100,
+.theme-dark .text-primary-200,
+.theme-dark .text-primary-300,
+.theme-dark .text-primary-400,
+.theme-dark .text-primary-500,
+.theme-dark .text-primary-600,
+.theme-dark .text-primary-700,
+.theme-dark .text-primary-800,
+.theme-dark .text-primary-900,
+.theme-dark .text-blue-50,
+.theme-dark .text-blue-100,
+.theme-dark .text-blue-200,
+.theme-dark .text-blue-300,
+.theme-dark .text-blue-400,
+.theme-dark .text-blue-500,
+.theme-dark .text-blue-600,
+.theme-dark .text-blue-700,
+.theme-dark .text-blue-800,
+.theme-dark .text-blue-900 {
+  color: #e2e8f0 !important;
 }
 
+/* Tema Hacker: TODO verde */
 .theme-hacker .text-gray-50,
 .theme-hacker .text-gray-100,
 .theme-hacker .text-gray-200,
@@ -532,30 +609,148 @@
 .theme-hacker .text-gray-600,
 .theme-hacker .text-gray-700,
 .theme-hacker .text-gray-800,
-.theme-hacker .text-gray-900 {
+.theme-hacker .text-gray-900,
+.theme-hacker .text-slate-50,
+.theme-hacker .text-slate-100,
+.theme-hacker .text-slate-200,
+.theme-hacker .text-slate-300,
+.theme-hacker .text-slate-400,
+.theme-hacker .text-slate-500,
+.theme-hacker .text-slate-600,
+.theme-hacker .text-slate-700,
+.theme-hacker .text-slate-800,
+.theme-hacker .text-slate-900,
+.theme-hacker .text-zinc-50,
+.theme-hacker .text-zinc-100,
+.theme-hacker .text-zinc-200,
+.theme-hacker .text-zinc-300,
+.theme-hacker .text-zinc-400,
+.theme-hacker .text-zinc-500,
+.theme-hacker .text-zinc-600,
+.theme-hacker .text-zinc-700,
+.theme-hacker .text-zinc-800,
+.theme-hacker .text-zinc-900 {
   color: #00ff00 !important;
 }
 
-/* Mejorar visibilidad de iconos */
+.theme-hacker .text-black,
+.theme-hacker .text-white {
+  color: #00ff00 !important;
+}
+
+/* Colores primarios y azules en tema hacker -> verde */
+.theme-hacker .text-primary-50,
+.theme-hacker .text-primary-100,
+.theme-hacker .text-primary-200,
+.theme-hacker .text-primary-300,
+.theme-hacker .text-primary-400,
+.theme-hacker .text-primary-500,
+.theme-hacker .text-primary-600,
+.theme-hacker .text-primary-700,
+.theme-hacker .text-primary-800,
+.theme-hacker .text-primary-900,
+.theme-hacker .text-blue-50,
+.theme-hacker .text-blue-100,
+.theme-hacker .text-blue-200,
+.theme-hacker .text-blue-300,
+.theme-hacker .text-blue-400,
+.theme-hacker .text-blue-500,
+.theme-hacker .text-blue-600,
+.theme-hacker .text-blue-700,
+.theme-hacker .text-blue-800,
+.theme-hacker .text-blue-900 {
+  color: #00ff00 !important;
+}
+
+/* Mejorar visibilidad de iconos - TODO gris/blanco en oscuro, verde en hacker */
 .theme-dark svg:not([class*="text-"]) {
-  color: #ffffff !important;
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+}
+
+.theme-dark svg[class*="text-"] {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
 }
 
 .theme-hacker svg:not([class*="text-"]) {
   color: #00ff00 !important;
+  fill: #00ff00 !important;
+}
+
+.theme-hacker svg[class*="text-"] {
+  color: #00ff00 !important;
+  fill: #00ff00 !important;
 }
 
 /* Mejorar visibilidad de labels y textos pequeños */
 .theme-dark label,
 .theme-dark .text-xs,
-.theme-dark .text-sm {
+.theme-dark .text-sm,
+.theme-dark .text-base,
+.theme-dark .text-lg,
+.theme-dark .text-xl {
   color: #ffffff !important;
 }
 
 .theme-hacker label,
 .theme-hacker .text-xs,
-.theme-hacker .text-sm {
+.theme-hacker .text-sm,
+.theme-hacker .text-base,
+.theme-hacker .text-lg,
+.theme-hacker .text-xl {
   color: #00ff00 !important;
+}
+
+/* Badges y estados - TODO gris/blanco en oscuro, verde en hacker */
+.theme-dark .badge,
+.theme-dark [class*="badge"],
+.theme-dark [class*="Badge"] {
+  color: #ffffff !important;
+  background-color: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+.theme-hacker .badge,
+.theme-hacker [class*="badge"],
+.theme-hacker [class*="Badge"] {
+  color: #00ff00 !important;
+  background-color: #0a0a0a !important;
+  border-color: #00ff00 !important;
+}
+
+/* Dropdowns y menús */
+.theme-dark [role="menu"],
+.theme-dark [role="menuitem"],
+.theme-dark .dropdown {
+  background-color: var(--color-surface) !important;
+  color: #ffffff !important;
+  border-color: var(--color-border) !important;
+}
+
+.theme-hacker [role="menu"],
+.theme-hacker [role="menuitem"],
+.theme-hacker .dropdown {
+  background-color: #0a0a0a !important;
+  color: #00ff00 !important;
+  border-color: #00ff00 !important;
+}
+
+/* Regla final: Asegurar que TODOS los elementos sin clases específicas sigan la paleta */
+.theme-dark *:not([class*="bg-primary"]):not([class*="bg-green"]):not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-yellow"]):not([class*="bg-emerald"]):not([class*="bg-teal"]):not([class*="bg-cyan"]):not([class*="bg-purple"]):not([class*="bg-pink"]):not([class*="bg-orange"]):not([class*="bg-indigo"]):not([class*="bg-violet"]) {
+  /* Solo aplicar si no tiene una clase de color de texto específica */
+}
+
+.theme-dark [class*="bg-gray"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]):not([class*="bg-gray-700"]),
+.theme-dark [class*="bg-slate"]:not([class*="bg-slate-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-700"]),
+.theme-dark [class*="bg-zinc"]:not([class*="bg-zinc-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-700"]) {
+  background-color: var(--color-surface) !important;
+}
+
+.theme-hacker [class*="bg-gray"]:not([class*="bg-gray-900"]):not([class*="bg-gray-800"]):not([class*="bg-gray-700"]),
+.theme-hacker [class*="bg-slate"]:not([class*="bg-slate-900"]):not([class*="bg-slate-800"]):not([class*="bg-slate-700"]),
+.theme-hacker [class*="bg-zinc"]:not([class*="bg-zinc-900"]):not([class*="bg-zinc-800"]):not([class*="bg-zinc-700"]) {
+  background-color: #0a0a0a !important;
 }
 
 @layer components {
