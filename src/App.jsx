@@ -24,6 +24,12 @@ function App() {
     if (import.meta.env.VITE_BASE_PATH) {
       return import.meta.env.VITE_BASE_PATH
     }
+    // Si estamos en Vercel, Netlify u otros, usar '/'
+    if (window.location.hostname.includes('vercel.app') || 
+        window.location.hostname.includes('netlify.app') ||
+        window.location.hostname.includes('vercel.com')) {
+      return '/'
+    }
     // Detectar si estamos en GitHub Pages por la URL
     if (window.location.hostname.includes('github.io')) {
       const pathParts = window.location.pathname.split('/').filter(p => p)

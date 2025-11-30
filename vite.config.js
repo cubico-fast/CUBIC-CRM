@@ -7,9 +7,8 @@ export default defineConfig({
     port: 3000,
     open: true
   },
-  // Configuración para GitHub Pages
-  // Solo usar base path si está explícitamente definido
-  base: process.env.VITE_BASE_PATH || '/CUBIC-CRM/',
+  // Base path: usar '/CUBIC-CRM/' solo para GitHub Pages, '/' para otros (Vercel, Netlify, etc.)
+  base: process.env.VITE_BASE_PATH || (process.env.VERCEL ? '/' : '/CUBIC-CRM/'),
   build: {
     // Asegurar que los assets se generen correctamente
     assetsDir: 'assets',
