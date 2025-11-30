@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "VITE_BASE_PATH=/ npm run build",
   "outputDirectory": "dist",
-  "env": {
-    "VITE_BASE_PATH": "/"
-  },
+  "installCommand": "npm install",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
