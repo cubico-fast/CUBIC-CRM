@@ -48,6 +48,9 @@ import {
   obtenerMetricasFacebook,
   obtenerInfoFacebook
 } from '../utils/metaApi'
+import {
+  guardarMetricasMarketing
+} from '../utils/firebaseUtils'
 
 const Marketing = () => {
   const navigate = useNavigate()
@@ -61,6 +64,25 @@ const Marketing = () => {
   })
   const [loadingMetricas, setLoadingMetricas] = useState(false)
   const [errorMetricas, setErrorMetricas] = useState(null)
+
+  // Cargar configuración de Meta al montar
+  useEffect(() => {
+    const cargarConfiguracion = async () => {
+      try {
+        const config = await obtenerConfiguracionMeta()
+        if (config) {
+          setConfigMeta(config)
+          // Cargar métricas automáticamente si hay configuración
+          if (config.paginaId || config.instagramAccountId) {
+            refrescarMetricas(config)
+          }
+        }
+      } catch (error) {
+        console.error('Error al cargar configuración:', error)
+      }
+    }
+    cargarConfiguracion()
+  }, [])
 
   // Actualizar fecha actual
   useEffect(() => {
@@ -76,6 +98,120 @@ const Marketing = () => {
     const interval = setInterval(updateDate, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  // Función para refrescar métricas y guardarlas en Firestore
+  const refrescarMetricas = async (config = configMeta) => {
+    if (!config) {
+      setErrorMetricas('No hay configuración de Meta disponible')
+      return
+    }
+
+    setLoadingMetricas(true)
+    setErrorMetricas(null)
+
+    try {
+      const nuevasMetricas = {
+        instagram: null,
+        facebook: null
+      }
+
+      // Obtener métricas de Instagram si está configurado
+      if (config.instagramAccountId && config.paginaAccessToken) {
+        try {
+          const [info, impressions, reach, profileViews] = await Promise.all([
+            obtenerInfoInstagram(config.instagramAccountId, config.paginaAccessToken),
+            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'impressions', 'day'),
+            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'reach', 'day'),
+            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'profile_views', 'day')
+          ])
+
+          nuevasMetricas.instagram = {
+            info,
+            impressions,
+            reach,
+            profileViews
+          }
+
+          // Guardar métricas de Instagram en Firestore
+          await guardarMetricasMarketing({
+            username: config.instagramUsername,
+            info: {
+              followers_count: info.followers_count,
+              follows_count: info.follows_count,
+              media_count: info.media_count,
+              username: info.username
+            },
+            impressions: impressions.map(m => ({
+              metric: m.name,
+              period: m.period,
+              values: m.values
+            })),
+            reach: reach.map(m => ({
+              metric: m.name,
+              period: m.period,
+              values: m.values
+            })),
+            profileViews: profileViews.map(m => ({
+              metric: m.name,
+              period: m.period,
+              values: m.values
+            }))
+          }, 'instagram', config.instagramAccountId)
+        } catch (error) {
+          console.error('Error al obtener métricas de Instagram:', error)
+          setErrorMetricas(`Error al obtener métricas de Instagram: ${error.message}`)
+        }
+      }
+
+      // Obtener métricas de Facebook si está configurado
+      if (config.paginaId && config.paginaAccessToken) {
+        try {
+          const [info, impressions, reach] = await Promise.all([
+            obtenerInfoFacebook(config.paginaId, config.paginaAccessToken),
+            obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_impressions', 'day'),
+            obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_reach', 'day')
+          ])
+
+          nuevasMetricas.facebook = {
+            info,
+            impressions,
+            reach
+          }
+
+          // Guardar métricas de Facebook en Firestore
+          await guardarMetricasMarketing({
+            pageName: config.paginaNombre,
+            info: {
+              name: info.name,
+              fan_count: info.fan_count,
+              followers_count: info.followers_count,
+              category: info.category
+            },
+            impressions: impressions.map(m => ({
+              metric: m.name,
+              period: m.period,
+              values: m.values
+            })),
+            reach: reach.map(m => ({
+              metric: m.name,
+              period: m.period,
+              values: m.values
+            }))
+          }, 'facebook', config.paginaId)
+        } catch (error) {
+          console.error('Error al obtener métricas de Facebook:', error)
+          setErrorMetricas(`Error al obtener métricas de Facebook: ${error.message}`)
+        }
+      }
+
+      setMetricasReales(nuevasMetricas)
+    } catch (error) {
+      console.error('Error al refrescar métricas:', error)
+      setErrorMetricas(`Error al refrescar métricas: ${error.message}`)
+    } finally {
+      setLoadingMetricas(false)
+    }
+  }
 
   // Datos de ejemplo para algoritmos de redes sociales
   const algoritmoData = {

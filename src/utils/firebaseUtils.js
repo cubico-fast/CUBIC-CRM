@@ -338,3 +338,91 @@ export const deleteCliente = async (clienteId) => {
   }
 }
 
+// ========== FUNCIONES PARA MÉTRICAS DE MARKETING ==========
+
+/**
+ * Guardar métricas de marketing en Firestore
+ * @param {object} metricasData - Datos de las métricas a guardar (debe incluir platform y accountId)
+ * @param {string} platform - 'instagram' o 'facebook'
+ * @param {string} accountId - ID de la cuenta (Instagram Account ID o Facebook Page ID)
+ */
+export const guardarMetricasMarketing = async (metricasData, platform, accountId) => {
+  try {
+    const metricasRef = collection(db, 'marketing_metricas')
+    const timestamp = new Date().toISOString()
+    
+    // Estructura de datos para guardar (evitar duplicar platform)
+    const { platform: _, accountId: __, ...restData } = metricasData
+    
+    const dataToSave = {
+      platform: platform,
+      accountId: accountId,
+      timestamp: timestamp,
+      fecha: new Date().toISOString().split('T')[0], // Fecha en formato YYYY-MM-DD
+      ...restData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+    
+    const docRef = await addDoc(metricasRef, dataToSave)
+    return { id: docRef.id, ...dataToSave }
+  } catch (error) {
+    console.error('Error al guardar métricas de marketing:', error)
+    throw error
+  }
+}
+
+/**
+ * Obtener métricas de marketing desde Firestore
+ * @param {string} platform - 'instagram' o 'facebook' (opcional)
+ * @param {string} accountId - ID de la cuenta (opcional)
+ * @param {number} limit - Límite de resultados (opcional, por defecto 100)
+ */
+export const obtenerMetricasMarketing = async (platform = null, accountId = null, limit = 100) => {
+  try {
+    const metricasRef = collection(db, 'marketing_metricas')
+    let q = query(metricasRef, orderBy('timestamp', 'desc'))
+    
+    // Aplicar filtros si se proporcionan
+    if (platform) {
+      q = query(q, orderBy('platform'), orderBy('timestamp', 'desc'))
+    }
+    
+    const querySnapshot = await getDocs(q)
+    const metricas = []
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      // Aplicar filtros en memoria si es necesario
+      if ((!platform || data.platform === platform) && 
+          (!accountId || data.accountId === accountId)) {
+        metricas.push({
+          id: doc.id,
+          ...data
+        })
+      }
+    })
+    
+    // Limitar resultados
+    return metricas.slice(0, limit)
+  } catch (error) {
+    console.error('Error al obtener métricas de marketing:', error)
+    throw error
+  }
+}
+
+/**
+ * Obtener las últimas métricas de una plataforma específica
+ * @param {string} platform - 'instagram' o 'facebook'
+ * @param {string} accountId - ID de la cuenta
+ */
+export const obtenerUltimasMetricas = async (platform, accountId) => {
+  try {
+    const metricas = await obtenerMetricasMarketing(platform, accountId, 1)
+    return metricas.length > 0 ? metricas[0] : null
+  } catch (error) {
+    console.error('Error al obtener últimas métricas:', error)
+    throw error
+  }
+}
+
