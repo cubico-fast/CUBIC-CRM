@@ -33,7 +33,7 @@ const RealizarVenta = () => {
   
   // Estado para el producto seleccionado para agregar
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
-  const [cantidadProducto, setCantidadProducto] = useState(1)
+  const [cantidadProducto, setCantidadProducto] = useState('1')
   const [precioUnitario, setPrecioUnitario] = useState(0)
   const [costoUnitario, setCostoUnitario] = useState(0)
   const [precioUnitarioSeleccionado, setPrecioUnitarioSeleccionado] = useState(0)
@@ -285,7 +285,7 @@ const RealizarVenta = () => {
     
     // Cargar los datos del producto en el panel de edición
     setProductoSeleccionado(productoOriginal)
-    setCantidadProducto(producto.cantidad || 1)
+    setCantidadProducto(String(producto.cantidad || 1))
     setPrecioUnitario(producto.precio || 0)
     setCostoUnitario(producto.productoOriginal?.precioCompra || productoOriginal?.precioCompra || 0)
     setPrecioUnitarioSeleccionado(producto.precio || 0)
@@ -322,7 +322,7 @@ const RealizarVenta = () => {
     const presentacionInicial = producto.presentaciones?.[0] || null
     
     setProductoSeleccionado(producto)
-    setCantidadProducto(1)
+    setCantidadProducto('1')
     setPrecioUnitario(precioInicial)
     setCostoUnitario(producto.precioCompra || 0)
     setPrecioUnitarioSeleccionado(precioInicial)
@@ -343,8 +343,9 @@ const RealizarVenta = () => {
       // El precio ingresado incluye el impuesto (15.25%)
       // Extraer el impuesto: precio con impuesto - (precio con impuesto * tasa de impuesto)
       const TASA_IMPUESTO = 0.1525 // 15.25%
+      const cantidadNumerica = parseFloat(cantidadProducto) || 0
       const precioSinImpuesto = precioUnitarioSeleccionado - (precioUnitarioSeleccionado * TASA_IMPUESTO)
-      const subtotalSinImpuesto = precioSinImpuesto * cantidadProducto
+      const subtotalSinImpuesto = precioSinImpuesto * cantidadNumerica
       const subtotal = subtotalSinImpuesto - descuentoMonto
       setSubtotalItem(Math.max(0, subtotal))
     }
@@ -353,7 +354,8 @@ const RealizarVenta = () => {
   // Calcular descuento cuando cambia el porcentaje
   useEffect(() => {
     if (productoSeleccionado && descuentoPorcentaje > 0) {
-      const monto = (precioUnitarioSeleccionado * cantidadProducto * descuentoPorcentaje) / 100
+      const cantidadNumerica = parseFloat(cantidadProducto) || 0
+      const monto = (precioUnitarioSeleccionado * cantidadNumerica * descuentoPorcentaje) / 100
       setDescuentoMonto(monto)
     } else if (descuentoPorcentaje === 0) {
       setDescuentoMonto(0)
@@ -373,7 +375,8 @@ const RealizarVenta = () => {
     if (!productoSeleccionado) return
 
     // Validar que haya cantidad
-    if (cantidadProducto <= 0) {
+    const cantidadNumerica = parseFloat(cantidadProducto) || 0
+    if (cantidadNumerica <= 0 || cantidadProducto === '' || cantidadProducto === null) {
       alert('La cantidad debe ser mayor a 0')
       return
     }
@@ -388,8 +391,9 @@ const RealizarVenta = () => {
     
     // El precio ingresado incluye el impuesto, extraer el precio sin impuesto
     // Fórmula: precio sin impuesto = precio con impuesto - (precio con impuesto * tasa)
+    const cantidadNumerica = parseFloat(cantidadProducto) || 0
     const precioSinImpuesto = precioUnitarioSeleccionado - (precioUnitarioSeleccionado * TASA_IMPUESTO)
-    const subtotalSinImpuesto = (precioSinImpuesto * cantidadProducto) - descuentoMonto
+    const subtotalSinImpuesto = (precioSinImpuesto * cantidadNumerica) - descuentoMonto
 
     // Si estamos editando un producto, actualizarlo usando el índice
     if (editandoProducto !== null && indiceEditando !== null) {
@@ -398,7 +402,7 @@ const RealizarVenta = () => {
         if (index === indiceEditando) {
           return { 
             ...p, 
-            cantidad: cantidadProducto, 
+            cantidad: cantidadNumerica, 
             precio: precioUnitarioSeleccionado, // Precio con impuesto (para mostrar)
             precioSinImpuesto: precioSinImpuesto, // Precio sin impuesto (para cálculos)
             subtotal: Math.max(0, subtotalSinImpuesto),
@@ -423,7 +427,7 @@ const RealizarVenta = () => {
       
       if (productoExistente) {
         // Si el producto ya existe, aumentar la cantidad y recalcular subtotal
-        const nuevaCantidad = productoExistente.cantidad + cantidadProducto
+        const nuevaCantidad = productoExistente.cantidad + cantidadNumerica
         const nuevoPrecioSinImpuesto = precioUnitarioSeleccionado - (precioUnitarioSeleccionado * TASA_IMPUESTO)
         const nuevoSubtotalSinImpuesto = (nuevoPrecioSinImpuesto * nuevaCantidad) - descuentoMonto
         
@@ -445,7 +449,7 @@ const RealizarVenta = () => {
         const nuevoProducto = {
           id: productoSeleccionado.id,
           nombre: productoSeleccionado.nombre,
-          cantidad: cantidadProducto,
+          cantidad: cantidadNumerica,
           precio: precioUnitarioSeleccionado, // Precio con impuesto (para mostrar)
           precioSinImpuesto: precioSinImpuesto, // Precio sin impuesto (para cálculos)
           subtotal: Math.max(0, subtotalSinImpuesto),
@@ -460,7 +464,7 @@ const RealizarVenta = () => {
 
     // Limpiar formulario después de agregar/editar
     setProductoSeleccionado(null)
-    setCantidadProducto(1)
+    setCantidadProducto('1')
     setPrecioUnitario(0)
     setCostoUnitario(0)
     setPrecioUnitarioSeleccionado(0)
@@ -1131,7 +1135,13 @@ const RealizarVenta = () => {
                         min="1"
                         max={productoSeleccionado.stock || 999}
                         value={cantidadProducto}
-                        onChange={(e) => setCantidadProducto(parseInt(e.target.value) || 1)}
+                        onChange={(e) => {
+                          const valor = e.target.value;
+                          // Permitir valores vacíos o números válidos
+                          if (valor === '' || (!isNaN(valor) && parseFloat(valor) >= 0)) {
+                            setCantidadProducto(valor);
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
                       <p className="text-xs text-gray-500 mt-1">
@@ -1238,8 +1248,9 @@ const RealizarVenta = () => {
                       onChange={(e) => {
                         const monto = parseFloat(e.target.value) || 0
                         setDescuentoMonto(monto)
-                        if (precioUnitarioSeleccionado * cantidadProducto > 0) {
-                          const porcentaje = (monto / (precioUnitarioSeleccionado * cantidadProducto)) * 100
+                        const cantidadNumerica = parseFloat(cantidadProducto) || 0
+                        if (precioUnitarioSeleccionado * cantidadNumerica > 0) {
+                          const porcentaje = (monto / (precioUnitarioSeleccionado * cantidadNumerica)) * 100
                           setDescuentoPorcentaje(porcentaje)
                         }
                       }}
@@ -1253,7 +1264,7 @@ const RealizarVenta = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Total:</label>
                   <input
                     type="text"
-                    value={formatCurrency((precioUnitarioSeleccionado * cantidadProducto) - descuentoMonto)}
+                    value={formatCurrency((precioUnitarioSeleccionado * (parseFloat(cantidadProducto) || 0)) - descuentoMonto)}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 font-semibold"
                   />
