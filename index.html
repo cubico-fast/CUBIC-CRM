@@ -57,6 +57,22 @@
     <title>Cubic CRM - Sistema de Gestión</title>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script>
+      // Guardar la ruta actual en sessionStorage ANTES de que React se cargue
+      // Esto ayuda a restaurar la ruta si GitHub Pages redirige a 404.html
+      (function() {
+        if (window.location.hostname.includes('github.io')) {
+          var currentPath = window.location.pathname;
+          // Solo guardar si no es index.html o 404.html
+          if (currentPath && !currentPath.includes('index.html') && !currentPath.includes('404.html')) {
+            try {
+              sessionStorage.setItem('ghp_404_redirect', currentPath);
+            } catch (e) {
+              // Si sessionStorage no está disponible, ignorar
+            }
+          }
+        }
+      })();
+      
       // Manejar callback de OAuth de Outlook
       window.addEventListener('load', () => {
         if (window.location.hash) {

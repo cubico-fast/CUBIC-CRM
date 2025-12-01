@@ -42,6 +42,29 @@ function App() {
 
   const basePath = getBasePath()
 
+  // Guardar la ruta actual en sessionStorage para que esté disponible si se carga un 404
+  useEffect(() => {
+    const saveCurrentPath = () => {
+      if (window.location.hostname.includes('github.io')) {
+        const currentPath = window.location.pathname
+        // Solo guardar si no es index.html o 404.html
+        if (currentPath && !currentPath.includes('index.html') && !currentPath.includes('404.html')) {
+          sessionStorage.setItem('ghp_404_redirect', currentPath)
+        }
+      }
+    }
+    
+    // Guardar la ruta cuando cambia
+    saveCurrentPath()
+    
+    // También guardar en el evento popstate (navegación del navegador)
+    window.addEventListener('popstate', saveCurrentPath)
+    
+    return () => {
+      window.removeEventListener('popstate', saveCurrentPath)
+    }
+  }, [])
+
   // Asegurar que el viewport se aplique correctamente en móvil
   useEffect(() => {
     const setViewport = () => {
