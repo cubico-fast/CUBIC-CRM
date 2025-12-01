@@ -255,15 +255,25 @@ export const obtenerPaginasFacebook = async (accessToken) => {
 
       const data = await response.json()
       
+      console.log(`📋 Respuesta completa de Facebook:`, JSON.stringify(data, null, 2))
       console.log(`📋 Respuesta recibida:`, {
         totalEnEstaPagina: data.data?.length || 0,
         tienePaginacion: !!data.paging?.next,
-        datosCompletos: data
+        tieneError: !!data.error,
+        error: data.error
       })
+      
+      // Si hay un error en la respuesta, lanzarlo
+      if (data.error) {
+        console.error('❌ Error en respuesta de Facebook:', data.error)
+        throw new Error(data.error.message || `Error de Facebook: ${JSON.stringify(data.error)}`)
+      }
       
       if (data.data && data.data.length > 0) {
         allPages = allPages.concat(data.data)
-        console.log(`✅ Páginas en esta página:`, data.data.map(p => p.name))
+        console.log(`✅ Páginas en esta página:`, data.data.map(p => `${p.name} (${p.id})`))
+      } else {
+        console.warn('⚠️ La respuesta no contiene páginas (data.data está vacío o no existe)')
       }
       
       // Verificar si hay más páginas (paginación)
