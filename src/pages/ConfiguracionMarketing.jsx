@@ -155,24 +155,47 @@ const ConfiguracionMarketing = () => {
         throw new Error('No se encontraron páginas de Facebook vinculadas a tu cuenta')
       }
 
-      setPaginasFacebook(paginas)
+      // Verificar qué páginas tienen Instagram vinculado
+      const paginasConInfo = await Promise.all(
+        paginas.map(async (pagina) => {
+          let tieneInstagram = false
+          try {
+            const instagramAccount = await obtenerCuentaInstagram(pagina.id, pagina.access_token)
+            tieneInstagram = !!instagramAccount
+            return { ...pagina, tieneInstagram, instagramAccount }
+          } catch (e) {
+            return { ...pagina, tieneInstagram: false, instagramAccount: null }
+          }
+        })
+      )
 
-      // Guardar configuración temporal
+      setPaginasFacebook(paginasConInfo)
+
+      // Guardar configuración temporal con información de Instagram
       const configTemp = {
         userAccessToken: token,
         platform: platform,
-        paginas: paginas,
+        paginas: paginasConInfo,
         connectedAt: new Date().toISOString()
       }
 
       setConfig(configTemp)
 
       // Si solo hay una página, seleccionarla automáticamente
-      if (paginas.length === 1) {
-        await seleccionarPagina(paginas[0])
+      if (paginasConInfo.length === 1) {
+        await seleccionarPagina(paginasConInfo[0])
+      } else {
+        // Si hay múltiples páginas, buscar la que tiene Instagram vinculado
+        const paginaConInstagram = paginasConInfo.find(p => p.tieneInstagram)
+        
+        // Si encontramos una página con Instagram, seleccionarla automáticamente
+        if (paginaConInstagram) {
+          await seleccionarPagina(paginaConInstagram)
+          setSuccess(`✅ Página "${paginaConInstagram.name}" con Instagram encontrada y conectada automáticamente.`)
+        } else {
+          setSuccess('✅ Autenticación exitosa. Selecciona una página para continuar. Si tienes Instagram vinculado, selecciona la página que está conectada a tu cuenta de Instagram Business.')
+        }
       }
-
-      setSuccess('✅ Autenticación exitosa. Selecciona una página para continuar.')
       
       // Limpiar URL y localStorage
       window.history.replaceState({}, document.title, window.location.pathname)
@@ -552,30 +575,47 @@ const ConfiguracionMarketing = () => {
       {/* Selección de página si hay múltiples */}
       {config?.userAccessToken && paginasFacebook.length > 1 && !config?.paginaId && (
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Selecciona una página de Facebook</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Selecciona una página de Facebook</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Si tienes Instagram vinculado, selecciona la página que está conectada a tu cuenta de Instagram Business.
+          </p>
           <div className="space-y-2">
-            {paginasFacebook.map((pagina) => (
-              <button
-                key={pagina.id}
-                onClick={() => seleccionarPagina(pagina)}
-                disabled={loading || paginaSeleccionada === pagina.id}
-                className={`w-full px-4 py-3 rounded-lg border-2 transition-colors text-left ${
-                  paginaSeleccionada === pagina.id
-                    ? 'border-primary-600 bg-primary-50'
-                    : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                } disabled:opacity-50`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{pagina.name}</p>
-                    <p className="text-sm text-gray-500">{pagina.category || 'Sin categoría'}</p>
+            {paginasFacebook.map((pagina) => {
+              // Verificar si esta página tiene Instagram vinculado
+              const tieneInstagram = config?.paginas?.find(p => p.id === pagina.id)?.tieneInstagram
+              return (
+                <button
+                  key={pagina.id}
+                  onClick={() => seleccionarPagina(pagina)}
+                  disabled={loading || paginaSeleccionada === pagina.id}
+                  className={`w-full px-4 py-3 rounded-lg border-2 transition-colors text-left ${
+                    paginaSeleccionada === pagina.id
+                      ? 'border-primary-600 bg-primary-50'
+                      : tieneInstagram
+                      ? 'border-green-300 bg-green-50 hover:border-green-400'
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  } disabled:opacity-50`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-900">{pagina.name}</p>
+                        {tieneInstagram && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
+                            <Instagram size={12} />
+                            Con Instagram
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">{pagina.category || 'Sin categoría'}</p>
+                    </div>
+                    {paginaSeleccionada === pagina.id && (
+                      <CheckCircle className="text-primary-600" size={20} />
+                    )}
                   </div>
-                  {paginaSeleccionada === pagina.id && (
-                    <CheckCircle className="text-primary-600" size={20} />
-                  )}
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
