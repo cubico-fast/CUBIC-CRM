@@ -7,8 +7,16 @@
 const getMetaAppId = () => {
   const appId = import.meta.env.VITE_META_APP_ID
   
+  // Debug: mostrar qué valor está recibiendo (solo en desarrollo)
+  if (import.meta.env.DEV) {
+    console.log('🔍 VITE_META_APP_ID raw:', appId, 'Type:', typeof appId)
+  }
+  
   // Si es undefined o null, retornar null
   if (!appId) {
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ VITE_META_APP_ID no está definido')
+    }
     return null
   }
   

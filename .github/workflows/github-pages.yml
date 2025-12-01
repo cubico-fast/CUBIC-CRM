@@ -44,6 +44,15 @@ jobs:
           VITE_BASE_PATH: '/CUBIC-CRM/'
           NODE_ENV: production
           GITHUB_PAGES: 'true'
+      - name: Verificar variables de entorno
+        run: |
+          echo "🔍 Verificando VITE_META_APP_ID..."
+          if [ -z "$VITE_META_APP_ID" ]; then
+            echo "❌ VITE_META_APP_ID está vacío o no está configurado"
+          else
+            echo "✅ VITE_META_APP_ID está configurado (longitud: ${#VITE_META_APP_ID} caracteres)"
+            echo "Primeros 10 caracteres: ${VITE_META_APP_ID:0:10}..."
+          fi
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
