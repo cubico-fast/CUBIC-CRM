@@ -128,11 +128,20 @@ const AnularDevolverVenta = () => {
           // Recalcular el subtotal del producto
           const nuevoSubtotal = (producto.precioUnitario * nuevaCantidad) - nuevoDescuento
           
+          // Preservar TODOS los campos del producto original, incluyendo productoId, codigoInterno, etc.
           return {
-            ...producto,
+            ...producto, // Preservar todos los campos originales
             cantidad: nuevaCantidad,
             descuentoMonto: nuevoDescuento,
-            subtotal: nuevoSubtotal
+            subtotal: nuevoSubtotal,
+            // Asegurar que estos campos críticos se mantengan
+            productoId: producto.productoId || producto.id,
+            codigoInterno: producto.codigoInterno,
+            codigoBarra: producto.codigoBarra,
+            nombre: producto.nombre,
+            precioUnitario: producto.precioUnitario,
+            presentacion: producto.presentacion,
+            unidad: producto.unidad
           }
         })
         .filter(p => p !== null) // Eliminar productos con cantidad 0
