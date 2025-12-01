@@ -60,7 +60,7 @@ let fbSDKInitPromise = null
  * @returns {Promise} Promise que se resuelve cuando el SDK está listo
  */
 const inicializarFacebookSDK = (appId) => {
-  // Si ya está inicializado, retornar el SDK directamente
+  // Si ya está inicializado con el mismo App ID, retornar el SDK directamente
   if (fbSDKInitialized && window.FB) {
     return Promise.resolve(window.FB)
   }
@@ -72,9 +72,13 @@ const inicializarFacebookSDK = (appId) => {
 
   // Crear nueva promesa de inicialización
   fbSDKInitPromise = new Promise((resolve, reject) => {
-    // Si el SDK ya está cargado pero no inicializado
-    if (window.FB && !fbSDKInitialized) {
+    // Función para inicializar el SDK
+    const initSDK = () => {
       try {
+        if (!window.FB) {
+          throw new Error('window.FB no está disponible')
+        }
+        
         window.FB.init({
           appId: appId,
           cookie: true,
@@ -82,58 +86,51 @@ const inicializarFacebookSDK = (appId) => {
           version: 'v18.0'
         })
         fbSDKInitialized = true
+        console.log('✅ Facebook SDK inicializado correctamente con App ID:', appId)
         resolve(window.FB)
-        return
       } catch (error) {
+        console.error('❌ Error al inicializar Facebook SDK:', error)
         reject(error)
-        return
       }
     }
 
-    // Si el SDK ya está disponible
+    // Si el SDK ya está disponible, inicializarlo inmediatamente
     if (window.FB) {
-      try {
-        window.FB.init({
-          appId: appId,
-          cookie: true,
-          xfbml: true,
-          version: 'v18.0'
-        })
-        fbSDKInitialized = true
-        resolve(window.FB)
-        return
-      } catch (error) {
-        reject(error)
-        return
+      initSDK()
+      return
+    }
+
+    // Si fbAsyncInit ya está definido, esperar a que se ejecute
+    if (window.fbAsyncInit) {
+      const originalInit = window.fbAsyncInit
+      window.fbAsyncInit = function() {
+        if (originalInit) originalInit()
+        initSDK()
+      }
+    } else {
+      // Configurar fbAsyncInit para que inicialice cuando el SDK se cargue
+      window.fbAsyncInit = function() {
+        initSDK()
       }
     }
 
-    // Esperar a que el SDK se cargue
+    // Esperar a que el SDK se cargue (verificar cada 100ms)
     const checkSDK = setInterval(() => {
       if (window.FB) {
         clearInterval(checkSDK)
-        try {
-          window.FB.init({
-            appId: appId,
-            cookie: true,
-            xfbml: true,
-            version: 'v18.0'
-          })
-          fbSDKInitialized = true
-          resolve(window.FB)
-        } catch (error) {
-          reject(error)
-        }
+        initSDK()
       }
     }, 100)
 
-    // Timeout después de 10 segundos
+    // Timeout después de 15 segundos
     setTimeout(() => {
       clearInterval(checkSDK)
       if (!fbSDKInitialized) {
-        reject(new Error('El SDK de Facebook no se cargó en el tiempo esperado. Asegúrate de que el script del SDK esté incluido en index.html'))
+        const error = new Error('El SDK de Facebook no se cargó en el tiempo esperado (15 segundos). Verifica que el script del SDK esté incluido en index.html y que no haya errores de red.')
+        console.error('❌', error.message)
+        reject(error)
       }
-    }, 10000)
+    }, 15000)
   })
 
   return fbSDKInitPromise
@@ -175,20 +172,111 @@ export const iniciarAutenticacionMeta = async (platform = 'facebook') => {
     // Usar FB.login() directamente - más simple y confiable
     return new Promise((resolve, reject) => {
       console.log('🔐 Solicitando login de Facebook con permisos:', scopes)
+      
+      // Verificar que FB.login esté disponible
+      if (typeof FB.login !== 'function') {
+        const error = new Error('FB.login no está disponible. El SDK de Facebook no se inicializó correctamente.')
+        console.error('❌', error.message)
+        reject(error)
+        return
+      }
+      
+      // IMPORTANTE: Usar auth_type: 'rerequest' para forzar que Facebook muestre
+      // la solicitud de permisos de nuevo, incluso si el usuario ya autorizó antes
+      // Esto es necesario porque si el usuario canceló permisos antes, no se volverán a solicitar
       FB.login((response) => {
-        console.log('📥 Respuesta de FB.login:', response)
+        console.log('📥 Respuesta completa de FB.login:', JSON.stringify(response, null, 2))
+        
         if (response.authResponse) {
           // Usuario autorizado, obtener el access token
           const accessToken = response.authResponse.accessToken
-          console.log('✅ Login exitoso, token obtenido (longitud:', accessToken.length + ')')
+          const grantedScopes = response.authResponse.grantedScopes || response.authResponse.granted_scopes || ''
+          
+          console.log('✅ Login exitoso')
+          console.log('   - Token obtenido (longitud:', accessToken.length + ')')
+          console.log('   - Permisos concedidos:', grantedScopes)
+          
+          // Verificar que tenga el permiso pages_show_list
+          const scopesArray = grantedScopes.split(',').map(s => s.trim())
+          const tienePagesShowList = scopesArray.includes('pages_show_list')
+          
+          if (!tienePagesShowList) {
+            console.error('❌ ERROR CRÍTICO: El permiso "pages_show_list" NO fue concedido')
+            console.error('   Permisos concedidos:', scopesArray)
+            console.error('   Permisos solicitados:', scopes.split(',').map(s => s.trim()))
+            
+            // Si no tiene pages_show_list, intentar solicitar de nuevo con rerequest
+            console.log('🔄 Intentando solicitar permisos de nuevo con rerequest...')
+            
+            FB.login((rerequestResponse) => {
+              if (rerequestResponse.authResponse) {
+                const newToken = rerequestResponse.authResponse.accessToken
+                const newScopes = rerequestResponse.authResponse.grantedScopes || rerequestResponse.authResponse.granted_scopes || ''
+                const newScopesArray = newScopes.split(',').map(s => s.trim())
+                
+                console.log('📥 Respuesta de rerequest:', newScopesArray)
+                
+                if (newScopesArray.includes('pages_show_list')) {
+                  console.log('✅ Ahora SÍ tiene pages_show_list')
+                  resolve(newToken)
+                } else {
+                  const error = new Error(
+                    'El permiso "pages_show_list" es REQUERIDO pero no fue concedido.\n\n' +
+                    'SOLUCIÓN:\n' +
+                    '1. Ve a https://www.facebook.com/settings?tab=business_tools\n' +
+                    '2. Busca la app "Métricas de mis redes" (o el nombre de tu app)\n' +
+                    '3. Haz clic en "Eliminar" para revocar todos los permisos\n' +
+                    '4. Vuelve a esta página y haz clic en "Conectar Facebook" de nuevo\n' +
+                    '5. Asegúrate de autorizar TODOS los permisos, especialmente "pages_show_list"'
+                  )
+                  console.error('❌', error.message)
+                  reject(error)
+                }
+              } else {
+                const error = new Error(
+                  'No se pudieron obtener los permisos necesarios. Por favor, intenta de nuevo y autoriza todos los permisos solicitados.'
+                )
+                console.error('❌', error.message)
+                reject(error)
+              }
+            }, {
+              scope: scopes,
+              auth_type: 'rerequest', // Forzar solicitud de permisos de nuevo
+              return_scopes: true
+            })
+            
+            return // No resolver aquí, esperar la respuesta del rerequest
+          }
+          
+          // Si tiene todos los permisos necesarios, resolver con el token
           resolve(accessToken)
         } else {
           // Usuario canceló o hubo un error
+          const errorCode = response.error?.code
           const errorMessage = response.error?.message || 'El usuario canceló la autorización o hubo un error'
-          console.error('❌ Error en login:', errorMessage, response.error)
-          reject(new Error(errorMessage))
+          
+          console.error('❌ Error en login de Facebook:')
+          console.error('   - Código:', errorCode)
+          console.error('   - Mensaje:', errorMessage)
+          console.error('   - Respuesta completa:', response)
+          
+          // Mensajes más específicos según el código de error
+          let mensajeFinal = errorMessage
+          if (errorCode === 200) {
+            mensajeFinal = 'El usuario canceló la autorización. Por favor, intenta de nuevo y autoriza todos los permisos, especialmente "pages_show_list".'
+          } else if (errorCode === 190) {
+            mensajeFinal = 'El token de acceso ha expirado. Por favor, intenta conectar de nuevo.'
+          } else if (errorCode === 10) {
+            mensajeFinal = 'Error de permisos. Asegúrate de autorizar todos los permisos solicitados, especialmente "pages_show_list".'
+          }
+          
+          reject(new Error(mensajeFinal))
         }
-      }, { scope: scopes })
+      }, { 
+        scope: scopes,
+        auth_type: 'rerequest', // CRÍTICO: Forzar que Facebook muestre la solicitud de permisos
+        return_scopes: true // Para ver qué permisos fueron concedidos
+      })
     })
   } catch (error) {
     console.error('Error al inicializar Facebook SDK:', error)
@@ -206,30 +294,60 @@ export const obtenerPaginasFacebook = async (accessToken) => {
     console.log('🔍 ===== INICIO DEBUG OBTENER PÁGINAS =====')
     console.log('🔑 Token recibido (primeros 30 caracteres):', accessToken?.substring(0, 30) + '...')
     
-    // Primero, verificar los permisos del token para debug
+    // PRIMERO: Verificar los permisos del token ANTES de intentar obtener páginas
+    let tienePagesShowList = false
     try {
       const debugResponse = await fetch(
         `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
       )
       if (debugResponse.ok) {
         const debugData = await debugResponse.json()
-        const permisos = debugData.data?.map(p => `${p.permission} (${p.status})`) || []
+        const permisosArray = debugData.data || []
+        const permisos = permisosArray.map(p => `${p.permission} (${p.status})`)
+        
         console.log('🔍 Permisos del token:', permisos.join(', ') || 'No se pudieron obtener permisos')
         
         // Verificar específicamente si tiene pages_show_list
-        const tienePagesShowList = permisos.some(p => p.includes('pages_show_list') && p.includes('granted'))
+        tienePagesShowList = permisosArray.some(p => p.permission === 'pages_show_list' && p.status === 'granted')
         console.log('🔍 ¿Tiene pages_show_list?:', tienePagesShowList ? '✅ SÍ' : '❌ NO')
         
+        // Si NO tiene pages_show_list, lanzar error ANTES de intentar obtener páginas
         if (!tienePagesShowList) {
-          console.error('❌ PROBLEMA: El token NO tiene el permiso pages_show_list concedido')
-          console.error('💡 Solución: Necesitas autorizar el permiso pages_show_list cuando te conectes')
+          const permisosConcedidos = permisosArray
+            .filter(p => p.status === 'granted')
+            .map(p => p.permission)
+          
+          console.error('❌ ERROR CRÍTICO: El token NO tiene el permiso "pages_show_list" concedido')
+          console.error('   Permisos concedidos:', permisosConcedidos.join(', ') || 'NINGUNO')
+          console.error('   Permisos necesarios: pages_show_list, pages_read_engagement, pages_manage_metadata')
+          
+          throw new Error(
+            'El token de acceso NO tiene el permiso "pages_show_list" concedido.\n\n' +
+            'Esto significa que cuando autorizaste la app, no concediste este permiso.\n\n' +
+            'SOLUCIÓN:\n' +
+            '1. Ve a https://www.facebook.com/settings?tab=business_tools\n' +
+            '2. Busca tu app y haz clic en "Eliminar" para revocar todos los permisos\n' +
+            '3. Vuelve a esta página y haz clic en "Conectar Facebook" de nuevo\n' +
+            '4. Cuando aparezca el popup de Facebook, asegúrate de:\n' +
+            '   - Autorizar TODOS los permisos solicitados\n' +
+            '   - Especialmente el permiso "pages_show_list"\n' +
+            '   - Si ves "Editar configuración", haz clic y autoriza todos los permisos\n\n' +
+            'Permisos concedidos actualmente: ' + (permisosConcedidos.length > 0 ? permisosConcedidos.join(', ') : 'NINGUNO')
+          )
         }
       } else {
         const errorData = await debugResponse.json()
         console.error('❌ Error al verificar permisos:', errorData)
+        throw new Error('No se pudieron verificar los permisos del token. Error: ' + (errorData.error?.message || 'Desconocido'))
       }
     } catch (e) {
+      // Si el error ya es sobre permisos, relanzarlo
+      if (e.message && e.message.includes('pages_show_list')) {
+        throw e
+      }
+      // Si es otro error, mostrar advertencia pero continuar
       console.warn('⚠️ No se pudieron verificar permisos:', e)
+      console.warn('⚠️ Continuando de todas formas, pero puede fallar...')
     }
 
     // Obtener información del usuario para debug
@@ -552,23 +670,15 @@ export const obtenerInfoFacebook = async (pageId, accessToken) => {
  */
 export const guardarConfiguracionMeta = async (config) => {
   try {
-    console.log('💾 Guardando configuración en Firebase...', config)
-    const { doc, setDoc } = await import('firebase/firestore')
-    const { db } = await import('../config/firebase')
+    const { db, collection, doc, setDoc } = await import('firebase/firestore')
+    const { db: firestoreDb } = await import('../config/firebase')
     
-    const configToSave = {
+    await setDoc(doc(firestoreDb, 'marketing_config', 'meta'), {
       ...config,
       updatedAt: new Date().toISOString()
-    }
-    
-    console.log('💾 Datos a guardar:', configToSave)
-    
-    const docRef = doc(db, 'marketing_config', 'meta')
-    await setDoc(docRef, configToSave)
-    
-    console.log('✅ Configuración guardada exitosamente en Firebase')
+    })
   } catch (error) {
-    console.error('❌ Error al guardar configuración de Meta:', error)
+    console.error('Error al guardar configuración de Meta:', error)
     throw error
   }
 }
@@ -578,22 +688,18 @@ export const guardarConfiguracionMeta = async (config) => {
  */
 export const obtenerConfiguracionMeta = async () => {
   try {
-    console.log('📖 Obteniendo configuración de Firebase...')
-    const { doc, getDoc } = await import('firebase/firestore')
-    const { db } = await import('../config/firebase')
+    const { db, collection, doc, getDoc } = await import('firebase/firestore')
+    const { db: firestoreDb } = await import('../config/firebase')
     
-    const docRef = doc(db, 'marketing_config', 'meta')
+    const docRef = doc(firestoreDb, 'marketing_config', 'meta')
     const docSnap = await getDoc(docRef)
     
     if (docSnap.exists()) {
-      const data = docSnap.data()
-      console.log('✅ Configuración encontrada en Firebase:', data)
-      return data
+      return docSnap.data()
     }
-    console.log('ℹ️ No hay configuración guardada en Firebase')
     return null
   } catch (error) {
-    console.error('❌ Error al obtener configuración de Meta:', error)
+    console.error('Error al obtener configuración de Meta:', error)
     return null
   }
 }

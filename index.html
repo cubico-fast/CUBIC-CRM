@@ -58,7 +58,26 @@
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <!-- Facebook SDK for JavaScript -->
     <div id="fb-root"></div>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_ES/sdk.js"></script>
+    <script>
+      // Inicializar el SDK de Facebook cuando esté listo
+      window.fbAsyncInit = function() {
+        // El SDK se inicializará cuando se llame a iniciarAutenticacionMeta
+        // con el App ID correcto
+        console.log('Facebook SDK cargado y listo para inicializar');
+      };
+      
+      // Cargar el SDK de forma asíncrona
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/es_ES/sdk.js";
+        js.async = true;
+        js.defer = true;
+        js.crossOrigin = "anonymous";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    </script>
     <script>
       // Guardar la ruta actual en sessionStorage ANTES de que React se cargue
       // Esto ayuda a restaurar la ruta si GitHub Pages redirige a 404.html
