@@ -149,10 +149,28 @@ const ConfiguracionMarketing = () => {
 
     try {
       // Obtener páginas de Facebook
-      const paginas = await obtenerPaginasFacebook(token)
+      let paginas = []
+      try {
+        paginas = await obtenerPaginasFacebook(token)
+      } catch (error) {
+        console.error('Error al obtener páginas:', error)
+        // Si el error es específico sobre permisos o páginas, proporcionar mensaje más útil
+        if (error.message.includes('permission') || error.message.includes('permiso')) {
+          throw new Error('No tienes permisos para ver las páginas. Asegúrate de autorizar el permiso "pages_show_list" cuando te conectes.')
+        }
+        throw new Error(`Error al obtener páginas de Facebook: ${error.message}`)
+      }
 
       if (paginas.length === 0) {
-        throw new Error('No se encontraron páginas de Facebook vinculadas a tu cuenta')
+        // Proporcionar mensaje más útil con posibles soluciones
+        const mensajeError = 'No se encontraron páginas de Facebook vinculadas a tu cuenta.\n\n' +
+          'Posibles causas:\n' +
+          '1. No tienes páginas de Facebook creadas\n' +
+          '2. No eres administrador o editor de ninguna página\n' +
+          '3. El token no tiene el permiso "pages_show_list"\n' +
+          '4. Las páginas no están asociadas a tu cuenta personal de Facebook\n\n' +
+          'Solución: Ve a https://www.facebook.com/pages y verifica que tengas páginas donde seas administrador.'
+        throw new Error(mensajeError)
       }
 
       console.log(`📋 Páginas encontradas: ${paginas.length}`, paginas.map(p => p.name))
