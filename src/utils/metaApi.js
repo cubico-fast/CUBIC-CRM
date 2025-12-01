@@ -552,15 +552,23 @@ export const obtenerInfoFacebook = async (pageId, accessToken) => {
  */
 export const guardarConfiguracionMeta = async (config) => {
   try {
-    const { db, collection, doc, setDoc } = await import('firebase/firestore')
-    const { db: firestoreDb } = await import('../config/firebase')
+    console.log('💾 Guardando configuración en Firebase...', config)
+    const { doc, setDoc } = await import('firebase/firestore')
+    const { db } = await import('../config/firebase')
     
-    await setDoc(doc(firestoreDb, 'marketing_config', 'meta'), {
+    const configToSave = {
       ...config,
       updatedAt: new Date().toISOString()
-    })
+    }
+    
+    console.log('💾 Datos a guardar:', configToSave)
+    
+    const docRef = doc(db, 'marketing_config', 'meta')
+    await setDoc(docRef, configToSave)
+    
+    console.log('✅ Configuración guardada exitosamente en Firebase')
   } catch (error) {
-    console.error('Error al guardar configuración de Meta:', error)
+    console.error('❌ Error al guardar configuración de Meta:', error)
     throw error
   }
 }
@@ -570,18 +578,22 @@ export const guardarConfiguracionMeta = async (config) => {
  */
 export const obtenerConfiguracionMeta = async () => {
   try {
-    const { db, collection, doc, getDoc } = await import('firebase/firestore')
-    const { db: firestoreDb } = await import('../config/firebase')
+    console.log('📖 Obteniendo configuración de Firebase...')
+    const { doc, getDoc } = await import('firebase/firestore')
+    const { db } = await import('../config/firebase')
     
-    const docRef = doc(firestoreDb, 'marketing_config', 'meta')
+    const docRef = doc(db, 'marketing_config', 'meta')
     const docSnap = await getDoc(docRef)
     
     if (docSnap.exists()) {
-      return docSnap.data()
+      const data = docSnap.data()
+      console.log('✅ Configuración encontrada en Firebase:', data)
+      return data
     }
+    console.log('ℹ️ No hay configuración guardada en Firebase')
     return null
   } catch (error) {
-    console.error('Error al obtener configuración de Meta:', error)
+    console.error('❌ Error al obtener configuración de Meta:', error)
     return null
   }
 }

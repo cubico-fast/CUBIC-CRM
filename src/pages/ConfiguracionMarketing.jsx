@@ -235,7 +235,23 @@ const ConfiguracionMarketing = () => {
         updatedAt: new Date().toISOString()
       }
 
-      await guardarConfiguracionMeta(configCompleta)
+      console.log('💾 Guardando configuración completa en Firebase...', configCompleta)
+      try {
+        await guardarConfiguracionMeta(configCompleta)
+        console.log('✅ Configuración guardada exitosamente')
+        
+        // Verificar que se guardó correctamente
+        const configVerificada = await obtenerConfiguracionMeta()
+        if (configVerificada) {
+          console.log('✅ Verificación: Configuración encontrada en Firebase', configVerificada)
+        } else {
+          console.warn('⚠️ Advertencia: No se pudo verificar la configuración guardada')
+        }
+      } catch (saveError) {
+        console.error('❌ Error al guardar en Firebase:', saveError)
+        throw new Error(`Error al guardar configuración: ${saveError.message}`)
+      }
+      
       setConfig(configCompleta)
       
       if (instagramAccount) {
