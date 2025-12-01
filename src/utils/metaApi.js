@@ -199,11 +199,43 @@ export const iniciarAutenticacionMeta = async (platform = 'facebook') => {
  */
 export const obtenerPaginasFacebook = async (accessToken) => {
   try {
+    // Primero, verificar los permisos del token para debug
+    try {
+      const debugResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me/permissions?access_token=${accessToken}`
+      )
+      if (debugResponse.ok) {
+        const debugData = await debugResponse.json()
+        console.log('🔍 Permisos del token:', debugData.data?.map(p => `${p.permission} (${p.status})`).join(', ') || 'No se pudieron obtener permisos')
+      }
+    } catch (e) {
+      console.warn('No se pudieron verificar permisos:', e)
+    }
+
+    // Obtener información del usuario para debug
+    try {
+      const userResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me?access_token=${accessToken}&fields=id,name`
+      )
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        console.log('👤 Usuario autenticado:', userData.name, `(ID: ${userData.id})`)
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener información del usuario:', e)
+    }
+
     let allPages = []
-    let nextUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}&fields=id,name,category,access_token&limit=100`
+    let nextUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}&fields=id,name,category,access_token,tasks&limit=100`
+    
+    console.log('🔍 Obteniendo páginas de Facebook desde:', nextUrl.split('?')[0])
     
     // Obtener todas las páginas usando paginación
+    let pageCount = 0
     while (nextUrl) {
+      pageCount++
+      console.log(`📄 Página ${pageCount} de resultados...`)
+      
       const response = await fetch(nextUrl, {
         method: 'GET',
         headers: {
@@ -213,27 +245,45 @@ export const obtenerPaginasFacebook = async (accessToken) => {
 
       if (!response.ok) {
         const error = await response.json()
+        console.error('❌ Error en la respuesta:', error)
         throw new Error(error.error?.message || 'Error al obtener páginas')
       }
 
       const data = await response.json()
       
+      console.log(`📋 Respuesta recibida:`, {
+        totalEnEstaPagina: data.data?.length || 0,
+        tienePaginacion: !!data.paging?.next,
+        datosCompletos: data
+      })
+      
       if (data.data && data.data.length > 0) {
         allPages = allPages.concat(data.data)
+        console.log(`✅ Páginas en esta página:`, data.data.map(p => p.name))
       }
       
       // Verificar si hay más páginas (paginación)
       if (data.paging && data.paging.next) {
         nextUrl = data.paging.next
+        console.log('➡️ Hay más páginas, continuando...')
       } else {
         nextUrl = null
+        console.log('✅ No hay más páginas')
       }
     }
 
-    console.log(`✅ Se encontraron ${allPages.length} página(s) de Facebook:`, allPages.map(p => p.name))
+    console.log(`✅ Total: Se encontraron ${allPages.length} página(s) de Facebook:`, allPages.map(p => `${p.name} (${p.id})`))
+    
+    if (allPages.length === 0) {
+      console.warn('⚠️ No se encontraron páginas. Verifica que:')
+      console.warn('1. Tengas al menos una página de Facebook')
+      console.warn('2. Seas administrador o editor de la página')
+      console.warn('3. El token tenga el permiso pages_show_list')
+    }
+    
     return allPages
   } catch (error) {
-    console.error('Error al obtener páginas de Facebook:', error)
+    console.error('❌ Error al obtener páginas de Facebook:', error)
     throw error
   }
 }
@@ -489,4 +539,5 @@ export const obtenerConfiguracionMeta = async () => {
     return null
   }
 }
+
 
