@@ -147,13 +147,29 @@ const ConfiguracionMarketing = () => {
     setError(null)
     setSuccess(null)
 
+    console.log('🚀 Iniciando procesamiento de token...', { platform, tokenLength: token?.length })
+
     try {
+      // Verificar el token primero
+      if (!token) {
+        throw new Error('No se recibió un token válido')
+      }
+
+      console.log('📝 Token recibido, longitud:', token.length, 'Primeros caracteres:', token.substring(0, 20) + '...')
+
       // Obtener páginas de Facebook
       let paginas = []
       try {
+        console.log('🔍 Llamando a obtenerPaginasFacebook...')
         paginas = await obtenerPaginasFacebook(token)
+        console.log('✅ obtenerPaginasFacebook completado, páginas encontradas:', paginas.length)
       } catch (error) {
-        console.error('Error al obtener páginas:', error)
+        console.error('❌ Error al obtener páginas:', error)
+        console.error('❌ Detalles del error:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        })
         // Si el error es específico sobre permisos o páginas, proporcionar mensaje más útil
         if (error.message.includes('permission') || error.message.includes('permiso')) {
           throw new Error('No tienes permisos para ver las páginas. Asegúrate de autorizar el permiso "pages_show_list" cuando te conectes.')
@@ -250,13 +266,16 @@ const ConfiguracionMarketing = () => {
     setLoading(true)
 
     try {
+      console.log('🔵 Iniciando conexión de Facebook...')
       // Usar el SDK de Facebook para obtener el token directamente
       const accessToken = await iniciarAutenticacionMeta('facebook')
+      console.log('✅ Token obtenido de iniciarAutenticacionMeta, longitud:', accessToken?.length)
       
       // Procesar el token obtenido
       await procesarToken(accessToken, 'facebook')
     } catch (error) {
-      console.error('Error al conectar Facebook:', error)
+      console.error('❌ Error al conectar Facebook:', error)
+      console.error('❌ Stack trace:', error.stack)
       setError(`Error al conectar Facebook: ${error.message || 'Error desconocido'}`)
     } finally {
       setLoading(false)
