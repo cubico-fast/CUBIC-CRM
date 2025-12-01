@@ -66,6 +66,15 @@
 - Verifica que el nombre del secret sea exactamente: `VITE_META_APP_ID`
 - Redespliega después de agregar el secret
 
+### Error: "Identificador de la app no válido" / "Invalid app identifier"
+- **Causa**: El App ID está configurado incorrectamente (probablemente como objeto JSON en lugar de solo el número)
+- **Solución**:
+  1. Ve a GitHub → Settings → Secrets → Actions
+  2. Edita el secret `VITE_META_APP_ID`
+  3. Asegúrate de que el valor sea **SOLO el número** (ejemplo: `2954507758068155`)
+  4. NO incluyas comillas, NO incluyas objetos JSON como `{"id": "2954507758068155"}`
+  5. Redespliega después de corregir
+
 ### Error: "Invalid redirect URI"
 - Verifica que la URL de redirección en Facebook sea exactamente: `https://cubico-fast.github.io/CUBIC-CRM/marketing/callback`
 - No debe tener una barra final `/` al final
