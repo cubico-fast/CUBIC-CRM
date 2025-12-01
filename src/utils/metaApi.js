@@ -415,8 +415,11 @@ export const obtenerMetricasInstagram = async (instagramAccountId, accessToken, 
  */
 export const obtenerInfoInstagram = async (instagramAccountId, accessToken) => {
   try {
+    // Campos disponibles para Instagram Business Account:
+    // id, username, name, profile_picture_url, website, biography, followers_count, follows_count, media_count
+    // NOTA: account_type no está disponible directamente en IGUser, se obtiene de otra forma
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=id,username,account_type,profile_picture_url&access_token=${accessToken}`,
+      `https://graph.facebook.com/v18.0/${instagramAccountId}?fields=id,username,name,profile_picture_url,website,biography,followers_count,follows_count,media_count&access_token=${accessToken}`,
       {
         method: 'GET',
         headers: {
