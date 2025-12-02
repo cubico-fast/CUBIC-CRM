@@ -162,18 +162,62 @@ export const deleteProducto = async (productoId) => {
 export const getVentas = async () => {
   try {
     const ventasRef = collection(db, 'ventas')
-    const q = query(ventasRef, orderBy('fecha', 'desc'))
-    const querySnapshot = await getDocs(q)
+    // Intentar ordenar por fecha, pero si falla (porque fecha es string), obtener sin ordenar
+    let querySnapshot
+    try {
+      const q = query(ventasRef, orderBy('fecha', 'desc'))
+      querySnapshot = await getDocs(q)
+    } catch (orderError) {
+      // Si falla el ordenamiento (puede pasar si fecha es string sin índice), obtener sin ordenar
+      console.warn('No se pudo ordenar por fecha, obteniendo sin orden:', orderError)
+      querySnapshot = await getDocs(ventasRef)
+    }
     
     const ventas = []
     querySnapshot.forEach((doc) => {
       const data = doc.data()
+      
+      // Normalizar el campo 'fecha' - usar el campo 'fecha' guardado en Firestore
+      let fechaNormalizada = data.fecha
+      
+      // Si fecha es un Timestamp de Firestore, convertirlo a string YYYY-MM-DD
+      if (fechaNormalizada?.toDate) {
+        fechaNormalizada = fechaNormalizada.toDate().toISOString().split('T')[0]
+      }
+      // Si fecha es un string, asegurarse de que esté en formato YYYY-MM-DD
+      else if (typeof fechaNormalizada === 'string') {
+        // Si tiene hora (formato ISO), tomar solo la parte de la fecha
+        if (fechaNormalizada.includes('T')) {
+          fechaNormalizada = fechaNormalizada.split('T')[0]
+        }
+        // Mantener el formato YYYY-MM-DD tal como está guardado en Firestore
+      }
+      // Si fecha es un objeto Date, convertirlo a string
+      else if (fechaNormalizada instanceof Date) {
+        fechaNormalizada = fechaNormalizada.toISOString().split('T')[0]
+      }
+      // Si no hay fecha, usar createdAt como fallback (solo para compatibilidad)
+      else if (!fechaNormalizada && data.createdAt) {
+        console.warn('Venta sin campo fecha, usando createdAt como fallback:', doc.id)
+        if (data.createdAt?.toDate) {
+          fechaNormalizada = data.createdAt.toDate().toISOString().split('T')[0]
+        } else if (data.createdAt instanceof Date) {
+          fechaNormalizada = data.createdAt.toISOString().split('T')[0]
+        }
+      }
+      
       ventas.push({
         id: doc.id,
         ...data,
-        // Convertir timestamps de Firestore a fechas si es necesario
-        fecha: data.fecha?.toDate ? data.fecha.toDate().toISOString().split('T')[0] : data.fecha
+        // Usar la fecha normalizada (siempre en formato YYYY-MM-DD)
+        fecha: fechaNormalizada
       })
+    })
+    
+    // Ordenar manualmente por fecha si no se pudo ordenar en la query
+    ventas.sort((a, b) => {
+      if (!a.fecha || !b.fecha) return 0
+      return b.fecha.localeCompare(a.fecha) // Orden descendente (más reciente primero)
     })
     
     return ventas

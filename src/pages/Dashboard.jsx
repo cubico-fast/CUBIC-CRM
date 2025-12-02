@@ -173,23 +173,57 @@ const Dashboard = () => {
     return () => clearInterval(interval)
   }, [])
 
-  // Filtrar ventas por rango de fechas seleccionado
+  // Filtrar ventas por rango de fechas seleccionado usando el campo 'fecha' de Firestore
   const ventasFiltradas = ventas.filter(venta => {
-    if (!venta.fecha) return false
+    // Usar el campo 'fecha' que se guarda en Firestore, NO createdAt ni updatedAt
+    if (!venta.fecha) {
+      console.warn('Venta sin campo fecha:', venta.id)
+      return false
+    }
+    
     // Normalizar la fecha de la venta (puede venir en diferentes formatos)
     let fechaVenta = venta.fecha
+    
+    // Si es string, asegurarse de que esté en formato YYYY-MM-DD
     if (typeof fechaVenta === 'string') {
-      // Si es string, tomar solo la parte de la fecha (YYYY-MM-DD)
-      fechaVenta = fechaVenta.split('T')[0]
+      // Si tiene hora (formato ISO), tomar solo la parte de la fecha
+      if (fechaVenta.includes('T')) {
+        fechaVenta = fechaVenta.split('T')[0]
+      }
+      // Si ya está en formato YYYY-MM-DD, mantenerlo así
+      // Validar formato básico (debe tener al menos YYYY-MM-DD)
+      if (!/^\d{4}-\d{2}-\d{2}/.test(fechaVenta)) {
+        console.warn('Formato de fecha inválido:', fechaVenta, 'en venta:', venta.id)
+        return false
+      }
     } else if (fechaVenta?.toDate) {
-      // Si es un Timestamp de Firestore
+      // Si es un Timestamp de Firestore (no debería pasar si se guarda como string)
       fechaVenta = fechaVenta.toDate().toISOString().split('T')[0]
     } else if (fechaVenta instanceof Date) {
       // Si es un objeto Date
       fechaVenta = fechaVenta.toISOString().split('T')[0]
+    } else {
+      console.warn('Tipo de fecha no reconocido:', typeof fechaVenta, 'en venta:', venta.id)
+      return false
     }
-    // Comparar fechas en formato YYYY-MM-DD
-    return fechaVenta >= fechaInicio && fechaVenta <= fechaFin
+    
+    // Comparar fechas en formato YYYY-MM-DD (comparación lexicográfica funciona para este formato)
+    const estaEnRango = fechaVenta >= fechaInicio && fechaVenta <= fechaFin
+    
+    // Log para debugging (comentar en producción si es necesario)
+    if (process.env.NODE_ENV === 'development') {
+      if (ventas.length > 0 && ventas.indexOf(venta) === 0) {
+        console.log('Filtro de fechas:', {
+          fechaVenta,
+          fechaInicio,
+          fechaFin,
+          estaEnRango,
+          totalVentas: ventas.length
+        })
+      }
+    }
+    
+    return estaEnRango
   })
 
   // Calcular estadísticas de comprobantes (solo para el rango seleccionado)
