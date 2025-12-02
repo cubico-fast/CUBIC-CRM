@@ -245,37 +245,44 @@ const ConfiguracionMarketing = () => {
         }
       }
 
-      console.log(`📋 Página encontrada: ${paginas[0]?.name || 'Ninguna'}`)
+      console.log(`📋 Páginas encontradas: ${paginas.length}`)
 
-      // Obtener la primera página (Geampier Acuña)
-      const pagina = paginas[0]
-      
-      if (!pagina) {
+      if (paginas.length === 0) {
         throw new Error('No se encontró ninguna página de Facebook')
       }
 
-      console.log(`✅ Página encontrada: ${pagina.name} (${pagina.id})`)
-
-      // Intentar obtener cuenta de Instagram vinculada
-      let instagramAccount = null
-      try {
-        instagramAccount = await obtenerCuentaInstagram(pagina.id, pagina.access_token)
-        if (instagramAccount) {
-          console.log(`✅ Instagram vinculado: @${instagramAccount.username}`)
+      // Procesar TODAS las páginas encontradas
+      const paginasProcesadas = []
+      
+      for (const pagina of paginas) {
+        console.log(`✅ Procesando página: ${pagina.name} (${pagina.id})`)
+        
+        // Intentar obtener cuenta de Instagram vinculada para cada página
+        let instagramAccount = null
+        try {
+          instagramAccount = await obtenerCuentaInstagram(pagina.id, pagina.access_token)
+          if (instagramAccount) {
+            console.log(`✅ Instagram vinculado a ${pagina.name}: @${instagramAccount.username}`)
+          }
+        } catch (e) {
+          console.log(`ℹ️ No hay Instagram vinculado a ${pagina.name}`)
         }
-      } catch (e) {
-        console.log(`ℹ️ No hay Instagram vinculado a esta página`)
+        
+        paginasProcesadas.push({
+          id: pagina.id,
+          name: pagina.name,
+          access_token: pagina.access_token,
+          category: pagina.category,
+          instagramAccountId: instagramAccount?.id || null,
+          instagramUsername: instagramAccount?.username || null
+        })
       }
 
-      // Guardar configuración en Firestore de forma segura (sin tokens en URL)
+      // Guardar TODAS las páginas en Firestore de forma segura
       const configCompleta = {
         userAccessToken: token,
         platform: platform,
-        paginaId: pagina.id,
-        paginaNombre: pagina.name,
-        paginaAccessToken: pagina.access_token,
-        instagramAccountId: instagramAccount?.id || null,
-        instagramUsername: instagramAccount?.username || null,
+        paginas: paginasProcesadas, // Array con todas las páginas
         connectedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -283,21 +290,40 @@ const ConfiguracionMarketing = () => {
       // Guardar en Firestore (tokens seguros, no en URL)
       await guardarConfiguracionMeta(configCompleta)
       
-      // Guardar solo metadatos en el estado (sin tokens completos)
+      // Guardar metadatos en el estado (sin tokens completos)
       setConfig({
         platform: configCompleta.platform,
-        paginaId: configCompleta.paginaId,
-        paginaNombre: configCompleta.paginaNombre,
-        instagramAccountId: configCompleta.instagramAccountId,
-        instagramUsername: configCompleta.instagramUsername,
+        paginas: paginasProcesadas.map(p => ({
+          id: p.id,
+          name: p.name,
+          instagramAccountId: p.instagramAccountId,
+          instagramUsername: p.instagramUsername,
+          category: p.category
+        })),
+        // Compatibilidad: mantener primera página para componentes que la usan
+        paginaId: paginasProcesadas[0]?.id || null,
+        paginaNombre: paginasProcesadas[0]?.name || null,
+        instagramAccountId: paginasProcesadas[0]?.instagramAccountId || null,
+        instagramUsername: paginasProcesadas[0]?.instagramUsername || null,
         connectedAt: configCompleta.connectedAt
       })
       
-      if (instagramAccount) {
-        setCuentaInstagram(instagramAccount)
-        setSuccess(`✅ ${pagina.name} y Instagram (@${instagramAccount.username}) conectados exitosamente. Tokens guardados de forma segura en Firestore.`)
-      } else {
-        setSuccess(`✅ ${pagina.name} conectada exitosamente. Tokens guardados de forma segura en Firestore.`)
+      // Mostrar mensaje de éxito con todas las páginas
+      const paginasConInstagram = paginasProcesadas.filter(p => p.instagramAccountId)
+      const mensaje = paginasProcesadas.length === 1
+        ? paginasConInstagram.length > 0
+          ? `✅ ${paginasProcesadas[0].name} y Instagram (@${paginasProcesadas[0].instagramUsername}) conectados exitosamente.`
+          : `✅ ${paginasProcesadas[0].name} conectada exitosamente.`
+        : `✅ ${paginasProcesadas.length} páginas conectadas exitosamente${paginasConInstagram.length > 0 ? ` (${paginasConInstagram.length} con Instagram)` : ''}. Tokens guardados de forma segura en Firestore.`
+      
+      setSuccess(mensaje)
+      
+      // Si hay Instagram en la primera página, mostrarlo
+      if (paginasProcesadas[0]?.instagramAccountId) {
+        setCuentaInstagram({
+          id: paginasProcesadas[0].instagramAccountId,
+          username: paginasProcesadas[0].instagramUsername
+        })
       }
       
       // Limpiar URL y localStorage

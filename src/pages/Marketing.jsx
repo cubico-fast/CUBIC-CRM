@@ -60,7 +60,7 @@ const Marketing = () => {
   const [configMeta, setConfigMeta] = useState(null)
   const [metricasReales, setMetricasReales] = useState({
     instagram: null,
-    facebook: null
+    facebook: [] // Array de métricas para todas las páginas
   })
   const [loadingMetricas, setLoadingMetricas] = useState(false)
   const [errorMetricas, setErrorMetricas] = useState(null)
@@ -73,7 +73,7 @@ const Marketing = () => {
         if (config) {
           setConfigMeta(config)
           // Cargar métricas automáticamente si hay configuración
-          if (config.paginaId || config.instagramAccountId) {
+          if (config.paginas?.length > 0 || config.paginaId || config.instagramAccountId) {
             refrescarMetricas(config)
           }
         }
@@ -112,17 +112,27 @@ const Marketing = () => {
     try {
       const nuevasMetricas = {
         instagram: null,
-        facebook: null
+        facebook: [] // Array para todas las páginas
       }
 
-      // Obtener métricas de Instagram si está configurado
-      if (config.instagramAccountId && config.paginaAccessToken) {
+      // Obtener todas las páginas (nuevo formato con array o formato anterior con una sola)
+      const paginas = config.paginas || (config.paginaId ? [{
+        id: config.paginaId,
+        name: config.paginaNombre,
+        access_token: config.paginaAccessToken,
+        instagramAccountId: config.instagramAccountId,
+        instagramUsername: config.instagramUsername
+      }] : [])
+
+      // Obtener métricas de Instagram si está configurado (de la primera página con Instagram)
+      const paginaConInstagram = paginas.find(p => p.instagramAccountId && p.access_token)
+      if (paginaConInstagram) {
         try {
           const [info, impressions, reach, profileViews] = await Promise.all([
-            obtenerInfoInstagram(config.instagramAccountId, config.paginaAccessToken),
-            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'impressions', 'day'),
-            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'reach', 'day'),
-            obtenerMetricasInstagram(config.instagramAccountId, config.paginaAccessToken, 'profile_views', 'day')
+            obtenerInfoInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token),
+            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'impressions', 'day'),
+            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'reach', 'day'),
+            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'profile_views', 'day')
           ])
 
           nuevasMetricas.instagram = {
@@ -134,7 +144,7 @@ const Marketing = () => {
 
           // Guardar métricas de Instagram en Firestore
           await guardarMetricasMarketing({
-            username: config.instagramUsername,
+            username: paginaConInstagram.instagramUsername,
             info: {
               followers_count: info.followers_count,
               follows_count: info.follows_count,
@@ -156,57 +166,61 @@ const Marketing = () => {
               period: m.period,
               values: m.values
             }))
-          }, 'instagram', config.instagramAccountId)
+          }, 'instagram', paginaConInstagram.instagramAccountId)
         } catch (error) {
           console.error('Error al obtener métricas de Instagram:', error)
           setErrorMetricas(`Error al obtener métricas de Instagram: ${error.message}`)
         }
       }
 
-      // Obtener métricas de Facebook si está configurado
-      if (config.paginaId && config.paginaAccessToken) {
+      // Obtener métricas de TODAS las páginas de Facebook
+      for (const pagina of paginas) {
+        if (!pagina.id || !pagina.access_token) continue
+        
         try {
+          console.log(`📊 Obteniendo métricas para: ${pagina.name} (${pagina.id})`)
+          
           // Obtener información básica primero
-          const info = await obtenerInfoFacebook(config.paginaId, config.paginaAccessToken)
+          const info = await obtenerInfoFacebook(pagina.id, pagina.access_token)
           
           // Intentar obtener métricas (con manejo de errores individual)
           let impressions = []
           let engagedUsers = []
           
           try {
-            impressions = await obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_impressions', 'day')
+            impressions = await obtenerMetricasFacebook(pagina.id, pagina.access_token, 'page_impressions', 'day')
           } catch (impError) {
-            console.warn('No se pudo obtener page_impressions:', impError.message)
-            // Intentar métrica alternativa
+            console.warn(`No se pudo obtener page_impressions para ${pagina.name}:`, impError.message)
             try {
-              impressions = await obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_views', 'day')
+              impressions = await obtenerMetricasFacebook(pagina.id, pagina.access_token, 'page_views', 'day')
             } catch (altError) {
-              console.warn('No se pudo obtener métricas de impresiones:', altError.message)
+              console.warn(`No se pudo obtener métricas de impresiones para ${pagina.name}:`, altError.message)
             }
           }
           
           try {
-            engagedUsers = await obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_engaged_users', 'day')
+            engagedUsers = await obtenerMetricasFacebook(pagina.id, pagina.access_token, 'page_engaged_users', 'day')
           } catch (engError) {
-            console.warn('No se pudo obtener page_engaged_users:', engError.message)
-            // Intentar métrica alternativa
+            console.warn(`No se pudo obtener page_engaged_users para ${pagina.name}:`, engError.message)
             try {
-              engagedUsers = await obtenerMetricasFacebook(config.paginaId, config.paginaAccessToken, 'page_fans', 'day')
+              engagedUsers = await obtenerMetricasFacebook(pagina.id, pagina.access_token, 'page_fans', 'day')
             } catch (altError) {
-              console.warn('No se pudo obtener métricas de engagement:', altError.message)
+              console.warn(`No se pudo obtener métricas de engagement para ${pagina.name}:`, altError.message)
             }
           }
 
-          nuevasMetricas.facebook = {
+          nuevasMetricas.facebook.push({
+            paginaId: pagina.id,
+            paginaNombre: pagina.name,
             info,
             impressions,
             engagedUsers
-          }
+          })
 
           // Guardar métricas de Facebook en Firestore (solo si hay datos)
           if (impressions.length > 0 || engagedUsers.length > 0) {
             await guardarMetricasMarketing({
-              pageName: config.paginaNombre,
+              pageName: pagina.name,
               info: {
                 name: info.name,
                 fan_count: info.fan_count || 0,
@@ -223,11 +237,11 @@ const Marketing = () => {
                 period: m.period,
                 values: m.values
               }))
-            }, 'facebook', config.paginaId)
+            }, 'facebook', pagina.id)
           }
         } catch (error) {
-          console.error('Error al obtener métricas de Facebook:', error)
-          setErrorMetricas(`Error al obtener métricas de Facebook: ${error.message}`)
+          console.error(`Error al obtener métricas de Facebook para ${pagina.name}:`, error)
+          // Continuar con las demás páginas aunque una falle
         }
       }
 
@@ -511,43 +525,47 @@ const Marketing = () => {
         </div>
       )}
 
-      {/* Métricas Reales de Facebook */}
-      {metricasReales.facebook && (
-        <div className="card bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Facebook className="text-blue-600" size={28} />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Facebook - {metricasReales.facebook.info.name || 'N/A'}
-                </h3>
-                <p className="text-sm text-gray-600">Métricas reales desde la API</p>
+      {/* Métricas Reales de Facebook - TODAS las páginas */}
+      {metricasReales.facebook && metricasReales.facebook.length > 0 && (
+        <div className="space-y-4">
+          {metricasReales.facebook.map((paginaMetricas, index) => (
+            <div key={paginaMetricas.paginaId || index} className="card bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <Facebook className="text-blue-600" size={28} />
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Facebook - {paginaMetricas.paginaNombre || paginaMetricas.info?.name || 'N/A'}
+                    </h3>
+                    <p className="text-sm text-gray-600">Métricas reales desde la API</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                  ● En Vivo
+                </span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Me gusta</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {paginaMetricas.info?.fan_count?.toLocaleString() || '0'}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Impresiones (7d)</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {paginaMetricas.impressions?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0).toLocaleString() || '0'}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Usuarios Comprometidos (7d)</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {paginaMetricas.engagedUsers?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0).toLocaleString() || '0'}
+                  </p>
+                </div>
               </div>
             </div>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-              ● En Vivo
-            </span>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Me gusta</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {metricasReales.facebook.info.fan_count?.toLocaleString() || '0'}
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Impresiones (7d)</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {metricasReales.facebook.impressions?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0).toLocaleString() || '0'}
-              </p>
-            </div>
-            <div className="bg-white p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Usuarios Comprometidos (7d)</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {metricasReales.facebook.engagedUsers?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0).toLocaleString() || '0'}
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 

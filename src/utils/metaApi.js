@@ -668,47 +668,83 @@ export const obtenerInfoFacebook = async (pageId, accessToken) => {
 /**
  * Guardar configuración de Meta en Firebase de forma segura
  * Asocia los tokens con el usuario autenticado
- * @param {object} config - Configuración a guardar
+ * Soporta múltiples páginas de Facebook
+ * @param {object} config - Configuración a guardar (puede ser una página o array de páginas)
  */
 export const guardarConfiguracionMeta = async (config) => {
   try {
-    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore')
+    const { doc, setDoc, serverTimestamp, getDoc } = await import('firebase/firestore')
     const { db, auth } = await import('../config/firebase')
     
     // Obtener el usuario actual (si está autenticado)
     const userId = auth.currentUser?.uid || 'anonymous'
     
-    // Guardar tokens completos de forma segura en colección separada
+    // Si config.paginas es un array, guardar todas las páginas
+    // Si no, convertir a array para mantener consistencia
+    const paginas = config.paginas || (config.paginaId ? [{
+      id: config.paginaId,
+      name: config.paginaNombre,
+      access_token: config.paginaAccessToken,
+      instagramAccountId: config.instagramAccountId,
+      instagramUsername: config.instagramUsername
+    }] : [])
+    
+    // Obtener configuración existente para mergear
     const tokensRef = doc(db, 'marketing_tokens', userId)
+    const tokensSnap = await getDoc(tokensRef)
+    const existingTokens = tokensSnap.exists() ? tokensSnap.data() : {}
+    
+    // Construir objeto de páginas con tokens
+    const paginasConTokens = {}
+    paginas.forEach(pagina => {
+      if (pagina.id) {
+        paginasConTokens[pagina.id] = {
+          id: pagina.id,
+          name: pagina.name || pagina.nombre,
+          access_token: pagina.access_token || pagina.accessToken,
+          instagramAccountId: pagina.instagramAccountId || null,
+          instagramUsername: pagina.instagramUsername || null,
+          category: pagina.category || null
+        }
+      }
+    })
+    
+    // Guardar tokens completos de forma segura en colección separada
     await setDoc(tokensRef, {
-      // Tokens completos (seguros en Firestore)
-      userAccessToken: config.userAccessToken || null,
-      paginaAccessToken: config.paginaAccessToken || null,
+      // Token del usuario (para obtener páginas)
+      userAccessToken: config.userAccessToken || existingTokens.userAccessToken || null,
+      // Páginas con sus tokens (objeto con pageId como key)
+      paginas: paginasConTokens,
       // Metadatos
       platform: config.platform || 'facebook',
-      paginaId: config.paginaId || null,
-      paginaNombre: config.paginaNombre || null,
-      instagramAccountId: config.instagramAccountId || null,
-      instagramUsername: config.instagramUsername || null,
-      connectedAt: config.connectedAt || new Date().toISOString(),
+      connectedAt: config.connectedAt || existingTokens.connectedAt || new Date().toISOString(),
       updatedAt: serverTimestamp(),
       userId: userId
     }, { merge: true })
     
     // Guardar también configuración pública (sin tokens sensibles)
     const configRef = doc(db, 'marketing_config', userId)
+    const configSnap = await getDoc(configRef)
+    const existingConfig = configSnap.exists() ? configSnap.data() : {}
+    
+    // Construir array de páginas sin tokens
+    const paginasPublicas = paginas.map(pagina => ({
+      id: pagina.id,
+      name: pagina.name || pagina.nombre,
+      instagramAccountId: pagina.instagramAccountId || null,
+      instagramUsername: pagina.instagramUsername || null,
+      category: pagina.category || null
+    }))
+    
     await setDoc(configRef, {
       platform: config.platform || 'facebook',
-      paginaId: config.paginaId || null,
-      paginaNombre: config.paginaNombre || null,
-      instagramAccountId: config.instagramAccountId || null,
-      instagramUsername: config.instagramUsername || null,
-      connectedAt: config.connectedAt || new Date().toISOString(),
+      paginas: paginasPublicas, // Array de todas las páginas
+      connectedAt: config.connectedAt || existingConfig.connectedAt || new Date().toISOString(),
       updatedAt: serverTimestamp(),
       userId: userId
     }, { merge: true })
     
-    console.log('✅ Configuración de Meta guardada en Firestore de forma segura')
+    console.log(`✅ Configuración de Meta guardada: ${paginas.length} página(s)`)
   } catch (error) {
     console.error('Error al guardar configuración de Meta:', error)
     throw error
@@ -717,6 +753,7 @@ export const guardarConfiguracionMeta = async (config) => {
 
 /**
  * Obtener configuración de Meta desde Firebase de forma segura
+ * Retorna todas las páginas conectadas
  */
 export const obtenerConfiguracionMeta = async () => {
   try {
@@ -738,10 +775,54 @@ export const obtenerConfiguracionMeta = async () => {
       const configSnap = await getDoc(configRef)
       const configData = configSnap.exists() ? configSnap.data() : {}
       
+      // Si hay páginas guardadas, combinarlas con sus tokens
+      const paginas = []
+      if (tokensData.paginas && typeof tokensData.paginas === 'object') {
+        // tokensData.paginas es un objeto con pageId como key
+        Object.values(tokensData.paginas).forEach(pagina => {
+          paginas.push({
+            id: pagina.id,
+            name: pagina.name,
+            access_token: pagina.access_token,
+            instagramAccountId: pagina.instagramAccountId,
+            instagramUsername: pagina.instagramUsername,
+            category: pagina.category
+          })
+        })
+      } else if (configData.paginas && Array.isArray(configData.paginas)) {
+        // Si no hay tokens pero hay páginas públicas, usar esas
+        configData.paginas.forEach(pagina => {
+          const paginaConToken = tokensData.paginas?.[pagina.id]
+          paginas.push({
+            id: pagina.id,
+            name: pagina.name,
+            access_token: paginaConToken?.access_token || null,
+            instagramAccountId: pagina.instagramAccountId,
+            instagramUsername: pagina.instagramUsername,
+            category: pagina.category
+          })
+        })
+      } else if (tokensData.paginaId) {
+        // Compatibilidad con formato anterior (una sola página)
+        paginas.push({
+          id: tokensData.paginaId,
+          name: tokensData.paginaNombre,
+          access_token: tokensData.paginaAccessToken,
+          instagramAccountId: tokensData.instagramAccountId,
+          instagramUsername: tokensData.instagramUsername
+        })
+      }
+      
       return {
         ...configData,
         userAccessToken: tokensData.userAccessToken || null,
-        paginaAccessToken: tokensData.paginaAccessToken || null
+        paginas: paginas, // Array de todas las páginas con sus tokens
+        // Compatibilidad: mantener campos individuales para la primera página
+        paginaId: paginas[0]?.id || null,
+        paginaNombre: paginas[0]?.name || null,
+        paginaAccessToken: paginas[0]?.access_token || null,
+        instagramAccountId: paginas[0]?.instagramAccountId || null,
+        instagramUsername: paginas[0]?.instagramUsername || null
       }
     }
     
