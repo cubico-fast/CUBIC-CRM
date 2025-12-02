@@ -210,15 +210,19 @@ const Dashboard = () => {
     // Comparar fechas en formato YYYY-MM-DD (comparación lexicográfica funciona para este formato)
     const estaEnRango = fechaVenta >= fechaInicio && fechaVenta <= fechaFin
     
-    // Log para debugging (comentar en producción si es necesario)
+    // Log para debugging - mostrar información útil
     if (process.env.NODE_ENV === 'development') {
       if (ventas.length > 0 && ventas.indexOf(venta) === 0) {
-        console.log('Filtro de fechas:', {
+        console.log('🔍 Filtro de fechas:', {
           fechaVenta,
           fechaInicio,
           fechaFin,
           estaEnRango,
-          totalVentas: ventas.length
+          totalVentas: ventas.length,
+          ventasFiltradas: ventas.filter(v => {
+            const f = typeof v.fecha === 'string' ? v.fecha.split('T')[0] : v.fecha
+            return f >= fechaInicio && f <= fechaFin
+          }).length
         })
       }
     }
@@ -253,14 +257,7 @@ const Dashboard = () => {
     .sort((a, b) => b.ventas - a.ventas)
     .slice(0, 5) // Top 5 vendedores
 
-  // Si no hay datos, mostrar datos de ejemplo
-  if (ventasPorVendedorData.length === 0) {
-    ventasPorVendedorData = [
-      { nombre: 'VENDEDOR 1', ventas: convertValue(50000) },
-      { nombre: 'VENDEDOR 2', ventas: convertValue(10000) },
-      { nombre: 'VENDEDOR 3', ventas: convertValue(5000) }
-    ]
-  }
+  // Mostrar datos reales siempre, incluso si están vacíos (no mostrar datos mock)
 
   // Calcular ventas por tipo de comprobante
   const ventasPorTipo = {
@@ -276,22 +273,17 @@ const Dashboard = () => {
     ventasPorTipo['NV'] += parseFloat(venta.total) || 0
   })
 
+  // Mostrar todos los tipos de comprobante con datos reales (incluso si son 0)
+  // Solo filtrar los que realmente tienen ventas para la gráfica
   let ventasPorTipoData = [
     { tipo: 'NV', ventas: convertValue(ventasPorTipo.NV), color: '#10b981' },
     { tipo: 'FA', ventas: convertValue(ventasPorTipo.FA), color: '#0ea5e9' },
     { tipo: 'BO', ventas: convertValue(ventasPorTipo.BO), color: '#f59e0b' },
     { tipo: 'NC', ventas: convertValue(ventasPorTipo.NC), color: '#ef4444' },
     { tipo: 'ND', ventas: convertValue(ventasPorTipo.ND), color: '#8b5cf6' }
-  ].filter(item => item.ventas > 0)
+  ].filter(item => item.ventas > 0) // Solo mostrar tipos con ventas > 0
 
-  // Si no hay datos, mostrar datos de ejemplo
-  if (ventasPorTipoData.length === 0) {
-    ventasPorTipoData = [
-      { tipo: 'NV', ventas: convertValue(58346.24), color: '#10b981' },
-      { tipo: 'FA', ventas: convertValue(15000), color: '#0ea5e9' },
-      { tipo: 'BO', ventas: convertValue(5000), color: '#f59e0b' }
-    ]
-  }
+  // No mostrar datos mock - siempre mostrar datos reales (incluso si están vacíos)
 
   // Calcular totales por tipo de comprobante (solo del rango seleccionado)
   const resumenComprobantes = [
@@ -303,8 +295,24 @@ const Dashboard = () => {
   ]
 
   // Calcular ventas y compras totales (solo del rango seleccionado)
+  // Usar siempre los datos reales filtrados por fecha
   const totalVentas = ventasFiltradas.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0)
   const totalCompras = 0 // Por ahora no hay compras
+
+  // Log para debugging - mostrar información del rango y totales
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Resumen de ventas filtradas:', {
+      fechaInicio,
+      fechaFin,
+      totalVentasEnRango: ventasFiltradas.length,
+      totalMonto: totalVentas,
+      ventas: ventasFiltradas.map(v => ({
+        id: v.id,
+        fecha: v.fecha,
+        total: v.total
+      }))
+    })
+  }
 
   const ventasComprasData = [
     { tipo: 'Ventas', monto: convertValue(totalVentas), color: '#f59e0b' },
