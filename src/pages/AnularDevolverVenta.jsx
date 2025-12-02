@@ -77,6 +77,24 @@ const AnularDevolverVenta = () => {
     if (!ventaSeleccionada) return
 
     try {
+      // Devolver todos los productos al inventario
+      const productos = await getProductos()
+      
+      for (const productoVendido of ventaSeleccionada.productos || []) {
+        // Buscar el producto por productoId o id
+        const productoId = productoVendido.productoId || productoVendido.id
+        const productoOriginal = productos.find(p => p.id === productoId)
+        
+        if (productoOriginal) {
+          const cantidadVendida = parseInt(productoVendido.cantidad) || 0
+          const nuevoStock = (productoOriginal.stock || 0) + cantidadVendida
+          
+          await updateProducto(productoOriginal.id, {
+            stock: nuevoStock
+          })
+        }
+      }
+
       // Actualizar el estado de la venta a "Anulada"
       const ventaActualizada = {
         estado: 'Anulada',
@@ -90,10 +108,10 @@ const AnularDevolverVenta = () => {
       setShowModal(false)
       setVentaSeleccionada(null)
       setModoModal(null)
-      alert('Venta anulada exitosamente')
+      alert('Venta anulada exitosamente. Todos los productos han sido devueltos al inventario.')
     } catch (error) {
       console.error('Error al anular venta:', error)
-      alert('Error al anular la venta')
+      alert('Error al anular la venta: ' + error.message)
     }
   }
 

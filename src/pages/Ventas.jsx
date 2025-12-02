@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Search, DollarSign, TrendingUp, Calendar, X, Eye, FileText, Package, XCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Search, DollarSign, TrendingUp, Calendar, X, Eye, FileText, Package, XCircle, Edit, Plus } from 'lucide-react'
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useCurrency } from '../contexts/CurrencyContext'
-import { getVentas } from '../utils/firebaseUtils'
+import { getVentas, updateVenta, getProductos, updateProducto } from '../utils/firebaseUtils'
 import { getCurrentDateSync, formatDate, getNetworkTime, getLastMonths } from '../utils/dateUtils'
 
 const Ventas = () => {
@@ -76,6 +76,7 @@ const Ventas = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
   const [showDetalleModal, setShowDetalleModal] = useState(false)
+  const [showEditarModal, setShowEditarModal] = useState(false)
 
   const filteredVentas = ventas.filter(venta => {
     const searchLower = searchTerm.toLowerCase()
@@ -96,6 +97,11 @@ const Ventas = () => {
   const handleVerDetalle = (venta) => {
     setVentaSeleccionada(venta)
     setShowDetalleModal(true)
+  }
+
+  const handleEditarVenta = (venta) => {
+    setVentaSeleccionada(venta)
+    setShowEditarModal(true)
   }
 
 
@@ -295,14 +301,26 @@ const Ventas = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={() => handleVerDetalle(venta)}
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 border border-blue-200"
-                        title="Ver detalles completos"
-                      >
-                        <Eye size={18} />
-                        <span className="text-sm font-medium">Ver</span>
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleVerDetalle(venta)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 border border-blue-200"
+                          title="Ver detalles completos"
+                        >
+                          <Eye size={18} />
+                          <span className="text-sm font-medium">Ver</span>
+                        </button>
+                        {venta.estado === 'Completada' && (
+                          <button
+                            onClick={() => handleEditarVenta(venta)}
+                            className="text-green-600 hover:text-green-800 hover:bg-green-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 border border-green-200"
+                            title="Editar venta"
+                          >
+                            <Edit size={18} />
+                            <span className="text-sm font-medium">Editar</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -480,6 +498,492 @@ const Ventas = () => {
         </div>
       )}
 
+      {/* Modal de Editar Venta */}
+      {showEditarModal && ventaSeleccionada && (
+        <EditarVentaModal
+          venta={ventaSeleccionada}
+          onClose={() => {
+            setShowEditarModal(false)
+            setVentaSeleccionada(null)
+            // Recargar ventas
+            const loadVentas = async () => {
+              try {
+                const ventasData = await getVentas()
+                setVentas(ventasData)
+              } catch (error) {
+                console.error('Error al cargar ventas:', error)
+              }
+            }
+            loadVentas()
+          }}
+        />
+      )}
+
+    </div>
+  )
+}
+
+// Componente Modal para Editar Venta
+const EditarVentaModal = ({ venta, onClose }) => {
+  const { formatCurrency } = useCurrency()
+  const [productos, setProductos] = useState([])
+  const [productosVenta, setProductosVenta] = useState([])
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [productosSugeridos, setProductosSugeridos] = useState([])
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const busquedaRef = useRef(null)
+
+  // Cargar productos disponibles
+  useEffect(() => {
+    const loadProductos = async () => {
+      try {
+        const productosData = await getProductos()
+        setProductos(productosData)
+      } catch (error) {
+        console.error('Error al cargar productos:', error)
+      }
+    }
+    loadProductos()
+  }, [])
+
+  // Inicializar productos de la venta
+  useEffect(() => {
+    if (venta && venta.productos) {
+      // Convertir productos de la venta al formato editable
+      const productosEditables = venta.productos.map(p => ({
+        ...p,
+        id: p.productoId || p.id,
+        precio: p.precioUnitario || 0,
+        cantidad: p.cantidad || 1,
+        descuento: p.descuentoMonto || 0,
+        subtotal: p.subtotal || 0
+      }))
+      setProductosVenta(productosEditables)
+    }
+  }, [venta])
+
+  // Filtrar productos según la búsqueda
+  useEffect(() => {
+    if (busquedaProducto.trim() === '') {
+      setProductosSugeridos([])
+      setMostrarSugerencias(false)
+      return
+    }
+
+    const terminoBusqueda = busquedaProducto.toLowerCase().trim()
+    const palabras = terminoBusqueda.split(' ').filter(p => p.length > 0)
+
+    const productosFiltrados = productos.filter(producto => {
+      const nombreProducto = (producto.nombre || '').toLowerCase()
+      const descripcionProducto = (producto.descripcion || '').toLowerCase()
+      const codigoInterno = (producto.codigoInterno || '').toLowerCase()
+      const codigoBarra = (producto.codigoBarra || '').toLowerCase()
+
+      return palabras.every(palabra => 
+        nombreProducto.includes(palabra) ||
+        descripcionProducto.includes(palabra) ||
+        codigoInterno.includes(palabra) ||
+        codigoBarra.includes(palabra)
+      )
+    }).slice(0, 10)
+
+    setProductosSugeridos(productosFiltrados)
+    setMostrarSugerencias(productosFiltrados.length > 0)
+  }, [busquedaProducto, productos])
+
+  // Calcular totales
+  const calcularTotales = (productosList) => {
+    const TASA_IMPUESTO = 0.1525
+    
+    const totalProductos = productosList.reduce((sum, p) => {
+      const precioConImpuesto = parseFloat(p.precioUnitario || p.precio || 0)
+      const cantidad = parseInt(p.cantidad) || 1
+      const descuento = parseFloat(p.descuentoMonto || p.descuento || 0)
+      return sum + ((precioConImpuesto * cantidad) - descuento)
+    }, 0)
+    
+    const descuentoGeneral = parseFloat(venta.descuento) || 0
+    const totalDespuesDescuento = totalProductos - descuentoGeneral
+    const subtotalFinal = totalDespuesDescuento - (totalDespuesDescuento * TASA_IMPUESTO)
+    const baseImponible = subtotalFinal
+    const impuestoFinal = totalDespuesDescuento - subtotalFinal
+    const icbperFinal = parseFloat(venta.icbper) || 0
+    const totalFinal = subtotalFinal + impuestoFinal + icbperFinal
+
+    return {
+      subtotal: subtotalFinal,
+      baseImponible,
+      impuesto: impuestoFinal,
+      total: totalFinal,
+      totalProductos: productosList.length
+    }
+  }
+
+  const handleSeleccionarProducto = (producto) => {
+    const precioInicial = producto.precio || producto.presentaciones?.[0]?.precioVenta || 0
+    const presentacionInicial = producto.presentaciones?.[0] || null
+    
+    // Verificar si el producto ya está en la venta
+    const productoExistente = productosVenta.find(p => (p.productoId || p.id) === producto.id)
+    
+    if (productoExistente) {
+      // Si ya existe, aumentar la cantidad
+      setProductosVenta(productosVenta.map(p => {
+        if ((p.productoId || p.id) === producto.id) {
+          const nuevaCantidad = (p.cantidad || 1) + 1
+          const precioUnitario = p.precioUnitario || p.precio || 0
+          const descuentoMonto = p.descuentoMonto || p.descuento || 0
+          const nuevoSubtotal = (precioUnitario * nuevaCantidad) - descuentoMonto
+          return {
+            ...p,
+            cantidad: nuevaCantidad,
+            subtotal: nuevoSubtotal
+          }
+        }
+        return p
+      }))
+    } else {
+      // Agregar nuevo producto
+      const nuevoProducto = {
+        productoId: producto.id,
+        codigoInterno: producto.codigoInterno || '',
+        codigoBarra: producto.codigoBarra || '',
+        nombre: producto.nombre,
+        cantidad: 1,
+        precioUnitario: precioInicial,
+        precio: precioInicial,
+        costoUnitario: producto.precioCompra || 0,
+        descuentoPorcentaje: 0,
+        descuentoMonto: 0,
+        descuento: 0,
+        subtotal: precioInicial,
+        presentacion: presentacionInicial?.presentacion || 'Unidad',
+        unidad: producto.unidad || 'UNIDAD'
+      }
+      setProductosVenta([...productosVenta, nuevoProducto])
+    }
+
+    setBusquedaProducto('')
+    setMostrarSugerencias(false)
+  }
+
+  const handleEliminarProducto = (index) => {
+    setProductosVenta(productosVenta.filter((_, i) => i !== index))
+  }
+
+  const handleCambiarCantidad = (index, nuevaCantidad) => {
+    if (nuevaCantidad < 1) nuevaCantidad = 1
+    
+    setProductosVenta(productosVenta.map((p, i) => {
+      if (i === index) {
+        const precioUnitario = p.precioUnitario || p.precio || 0
+        const descuentoMonto = p.descuentoMonto || p.descuento || 0
+        const nuevoSubtotal = (precioUnitario * nuevaCantidad) - descuentoMonto
+        return {
+          ...p,
+          cantidad: nuevaCantidad,
+          subtotal: nuevoSubtotal
+        }
+      }
+      return p
+    }))
+  }
+
+  const handleGuardarCambios = async () => {
+    if (productosVenta.length === 0) {
+      alert('La venta debe tener al menos un producto')
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Obtener productos originales para comparar cambios en stock
+      const productosOriginales = venta.productos || []
+      const productosActuales = productosVenta
+
+      // Calcular diferencias en productos
+      const productosOriginalesMap = new Map()
+      productosOriginales.forEach(p => {
+        const id = p.productoId || p.id
+        productosOriginalesMap.set(id, {
+          cantidad: p.cantidad || 0,
+          producto: p
+        })
+      })
+
+      const productosActualesMap = new Map()
+      productosActuales.forEach(p => {
+        const id = p.productoId || p.id
+        const cantidadActual = productosActualesMap.get(id)?.cantidad || 0
+        productosActualesMap.set(id, {
+          cantidad: cantidadActual + (p.cantidad || 0),
+          producto: p
+        })
+      })
+
+      // Actualizar stock
+      const todosProductos = await getProductos()
+      
+      // Productos eliminados o con cantidad reducida: devolver al stock
+      for (const [id, original] of productosOriginalesMap.entries()) {
+        const actual = productosActualesMap.get(id)
+        const cantidadOriginal = original.cantidad
+        const cantidadActual = actual ? actual.cantidad : 0
+        const diferencia = cantidadOriginal - cantidadActual
+
+        if (diferencia > 0) {
+          const productoOriginal = todosProductos.find(p => p.id === id)
+          if (productoOriginal) {
+            const nuevoStock = (productoOriginal.stock || 0) + diferencia
+            await updateProducto(productoOriginal.id, { stock: nuevoStock })
+          }
+        }
+      }
+
+      // Productos añadidos o con cantidad aumentada: reducir stock
+      for (const [id, actual] of productosActualesMap.entries()) {
+        const original = productosOriginalesMap.get(id)
+        const cantidadOriginal = original ? original.cantidad : 0
+        const cantidadActual = actual.cantidad
+        const diferencia = cantidadActual - cantidadOriginal
+
+        if (diferencia > 0) {
+          const productoOriginal = todosProductos.find(p => p.id === id)
+          if (productoOriginal) {
+            const stockActual = productoOriginal.stock || 0
+            if (stockActual < diferencia) {
+              alert(`No hay suficiente stock para ${productoOriginal.nombre}. Stock disponible: ${stockActual}, necesario: ${diferencia}`)
+              setLoading(false)
+              return
+            }
+            const nuevoStock = stockActual - diferencia
+            await updateProducto(productoOriginal.id, { stock: nuevoStock })
+          }
+        }
+      }
+
+      // Preparar productos para guardar
+      const productosParaGuardar = productosActuales.map(p => ({
+        productoId: p.productoId || p.id,
+        codigoInterno: p.codigoInterno || '',
+        codigoBarra: p.codigoBarra || '',
+        nombre: p.nombre,
+        cantidad: parseInt(p.cantidad) || 1,
+        precioUnitario: parseFloat(p.precioUnitario || p.precio || 0),
+        costoUnitario: p.costoUnitario || 0,
+        descuentoPorcentaje: p.descuentoPorcentaje || 0,
+        descuentoMonto: parseFloat(p.descuentoMonto || p.descuento || 0),
+        subtotal: parseFloat(p.subtotal || 0),
+        presentacion: p.presentacion || 'Unidad',
+        unidad: p.unidad || 'UNIDAD'
+      }))
+
+      // Calcular totales
+      const totales = calcularTotales(productosParaGuardar)
+
+      // Actualizar venta
+      const ventaActualizada = {
+        productos: productosParaGuardar,
+        totalProductos: totales.totalProductos,
+        subtotal: totales.subtotal,
+        baseImponible: totales.baseImponible,
+        impuesto: totales.impuesto,
+        total: totales.total,
+        // Mantener otros campos
+        fecha: venta.fecha,
+        vendedor: venta.vendedor,
+        local: venta.local,
+        almacen: venta.almacen,
+        moneda: venta.moneda,
+        tipoCambio: venta.tipoCambio,
+        tipoComprobante: venta.tipoComprobante,
+        descuento: venta.descuento,
+        icbper: venta.icbper,
+        retencion: venta.retencion,
+        totalRetenido: venta.totalRetenido,
+        formaPago: venta.formaPago,
+        estado: venta.estado
+      }
+
+      await updateVenta(venta.id, ventaActualizada)
+      alert('Venta actualizada exitosamente')
+      onClose()
+    } catch (error) {
+      console.error('Error al actualizar venta:', error)
+      alert('Error al actualizar la venta: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totales = calcularTotales(productosVenta)
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">Editar Venta</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          {/* Información de la Venta */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
+                <p className="text-sm font-medium text-gray-900">
+                  {venta.fecha ? formatDate(venta.fecha) : '-'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Vendedor</label>
+                <p className="text-sm font-medium text-gray-900">{venta.vendedor || '-'}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Total Actual</label>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatCurrency(venta.total || 0)}
+                </p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nuevo Total</label>
+                <p className="text-sm font-bold text-green-600">
+                  {formatCurrency(totales.total || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Buscar y Agregar Productos */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-md font-semibold text-gray-900 mb-3">Agregar Productos</h3>
+            <div className="relative" ref={busquedaRef}>
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Buscar producto por nombre, código interno o código de barras..."
+                value={busquedaProducto}
+                onChange={(e) => setBusquedaProducto(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-full"
+              />
+              {mostrarSugerencias && productosSugeridos.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 border rounded-lg shadow-lg max-h-80 overflow-y-auto bg-white">
+                  {productosSugeridos.map((producto) => (
+                    <div
+                      key={producto.id}
+                      onClick={() => handleSeleccionarProducto(producto)}
+                      className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">{producto.nombre}</p>
+                          <p className="text-sm text-gray-500">
+                            {producto.codigoInterno && `Código: ${producto.codigoInterno} | `}
+                            Stock: {producto.stock || 0}
+                          </p>
+                        </div>
+                        <Plus size={20} className="text-primary-600" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Lista de Productos */}
+          <div>
+            <h3 className="text-md font-semibold text-gray-900 mb-3">Productos en la Venta</h3>
+            {productosVenta.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No hay productos en esta venta</p>
+            ) : (
+              <div className="space-y-2">
+                {productosVenta.map((producto, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">
+                          {producto.codigoInterno && `${producto.codigoInterno} - `}
+                          {producto.nombre}
+                          {producto.presentacion && ` (${producto.presentacion})`}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                          <span>Precio: {formatCurrency(producto.precioUnitario || producto.precio || 0)}</span>
+                          <span>Subtotal: {formatCurrency(producto.subtotal || 0)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <label className="text-sm font-medium text-gray-700">Cantidad:</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={producto.cantidad || 1}
+                          onChange={(e) => handleCambiarCantidad(index, parseInt(e.target.value) || 1)}
+                          className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                        <button
+                          onClick={() => handleEliminarProducto(index)}
+                          className="text-red-600 hover:text-red-800 p-2 transition-colors"
+                          title="Eliminar producto"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Resumen de Totales */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="bg-blue-50 rounded-lg p-4 space-y-2">
+              <h5 className="font-semibold text-gray-900 mb-2">Resumen</h5>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium text-gray-900 ml-2">{formatCurrency(totales.subtotal || 0)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Impuesto:</span>
+                  <span className="font-medium text-gray-900 ml-2">{formatCurrency(totales.impuesto || 0)}</span>
+                </div>
+                <div className="col-span-2 border-t border-blue-200 pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-semibold">Total:</span>
+                    <span className="font-bold text-blue-700 text-lg">{formatCurrency(totales.total || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              disabled={loading}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleGuardarCambios}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
