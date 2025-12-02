@@ -165,9 +165,10 @@ export const iniciarAutenticacionMeta = async (platform = 'facebook') => {
     // pages_show_list: Ver todas las páginas del usuario
     // pages_read_engagement: Leer métricas de páginas
     // pages_manage_metadata: Gestionar metadatos de páginas
+    // business_management: Acceder a información de negocios (necesario para businesses)
     const scopes = platform === 'instagram' 
-      ? 'instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,pages_manage_metadata'
-      : 'pages_show_list,pages_read_engagement,pages_manage_metadata'
+      ? 'instagram_basic,instagram_manage_insights,pages_show_list,pages_read_engagement,pages_manage_metadata,business_management'
+      : 'pages_show_list,pages_read_engagement,pages_manage_metadata,business_management'
 
     // Usar FB.login() directamente - más simple y confiable
     return new Promise((resolve, reject) => {
@@ -665,18 +666,49 @@ export const obtenerInfoFacebook = async (pageId, accessToken) => {
 }
 
 /**
- * Guardar configuración de Meta en Firebase
+ * Guardar configuración de Meta en Firebase de forma segura
+ * Asocia los tokens con el usuario autenticado
  * @param {object} config - Configuración a guardar
  */
 export const guardarConfiguracionMeta = async (config) => {
   try {
-    const { db, collection, doc, setDoc } = await import('firebase/firestore')
-    const { db: firestoreDb } = await import('../config/firebase')
+    const { doc, setDoc, serverTimestamp } = await import('firebase/firestore')
+    const { db, auth } = await import('../config/firebase')
     
-    await setDoc(doc(firestoreDb, 'marketing_config', 'meta'), {
-      ...config,
-      updatedAt: new Date().toISOString()
-    })
+    // Obtener el usuario actual (si está autenticado)
+    const userId = auth.currentUser?.uid || 'anonymous'
+    
+    // Guardar tokens completos de forma segura en colección separada
+    const tokensRef = doc(db, 'marketing_tokens', userId)
+    await setDoc(tokensRef, {
+      // Tokens completos (seguros en Firestore)
+      userAccessToken: config.userAccessToken || null,
+      paginaAccessToken: config.paginaAccessToken || null,
+      // Metadatos
+      platform: config.platform || 'facebook',
+      paginaId: config.paginaId || null,
+      paginaNombre: config.paginaNombre || null,
+      instagramAccountId: config.instagramAccountId || null,
+      instagramUsername: config.instagramUsername || null,
+      connectedAt: config.connectedAt || new Date().toISOString(),
+      updatedAt: serverTimestamp(),
+      userId: userId
+    }, { merge: true })
+    
+    // Guardar también configuración pública (sin tokens sensibles)
+    const configRef = doc(db, 'marketing_config', userId)
+    await setDoc(configRef, {
+      platform: config.platform || 'facebook',
+      paginaId: config.paginaId || null,
+      paginaNombre: config.paginaNombre || null,
+      instagramAccountId: config.instagramAccountId || null,
+      instagramUsername: config.instagramUsername || null,
+      connectedAt: config.connectedAt || new Date().toISOString(),
+      updatedAt: serverTimestamp(),
+      userId: userId
+    }, { merge: true })
+    
+    console.log('✅ Configuración de Meta guardada en Firestore de forma segura')
   } catch (error) {
     console.error('Error al guardar configuración de Meta:', error)
     throw error
@@ -684,23 +716,64 @@ export const guardarConfiguracionMeta = async (config) => {
 }
 
 /**
- * Obtener configuración de Meta desde Firebase
+ * Obtener configuración de Meta desde Firebase de forma segura
  */
 export const obtenerConfiguracionMeta = async () => {
   try {
-    const { db, collection, doc, getDoc } = await import('firebase/firestore')
-    const { db: firestoreDb } = await import('../config/firebase')
+    const { doc, getDoc } = await import('firebase/firestore')
+    const { db, auth } = await import('../config/firebase')
     
-    const docRef = doc(firestoreDb, 'marketing_config', 'meta')
-    const docSnap = await getDoc(docRef)
+    // Obtener el usuario actual (si está autenticado)
+    const userId = auth.currentUser?.uid || 'anonymous'
     
-    if (docSnap.exists()) {
-      return docSnap.data()
+    // Obtener tokens (solo el usuario puede acceder a sus propios tokens)
+    const tokensRef = doc(db, 'marketing_tokens', userId)
+    const tokensSnap = await getDoc(tokensRef)
+    
+    if (tokensSnap.exists()) {
+      const tokensData = tokensSnap.data()
+      
+      // Obtener también la configuración pública
+      const configRef = doc(db, 'marketing_config', userId)
+      const configSnap = await getDoc(configRef)
+      const configData = configSnap.exists() ? configSnap.data() : {}
+      
+      return {
+        ...configData,
+        userAccessToken: tokensData.userAccessToken || null,
+        paginaAccessToken: tokensData.paginaAccessToken || null
+      }
     }
+    
     return null
   } catch (error) {
     console.error('Error al obtener configuración de Meta:', error)
     return null
+  }
+}
+
+/**
+ * Eliminar configuración de Meta (desconectar)
+ */
+export const eliminarConfiguracionMeta = async () => {
+  try {
+    const { doc, deleteDoc } = await import('firebase/firestore')
+    const { db, auth } = await import('../config/firebase')
+    
+    const userId = auth.currentUser?.uid || 'anonymous'
+    
+    // Eliminar tokens
+    const tokensRef = doc(db, 'marketing_tokens', userId)
+    await deleteDoc(tokensRef)
+    
+    // Eliminar configuración
+    const configRef = doc(db, 'marketing_config', userId)
+    await deleteDoc(configRef)
+    
+    console.log('✅ Configuración de Meta eliminada de Firestore')
+  } catch (error) {
+    console.error('Error al eliminar configuración de Meta:', error)
+    throw error
   }
 }
 

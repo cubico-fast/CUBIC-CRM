@@ -13,9 +13,10 @@ router.get('/auth/:platform', (req, res) => {
   const REDIRECT_URI = process.env.VITE_META_REDIRECT_URI || process.env.META_REDIRECT_URI || 'http://localhost:3000/api/marketing/callback';
 
   // Scopes según la plataforma
+  // business_management: Necesario para acceder a información de negocios e Instagram
   const scopes = platform === 'instagram'
-    ? 'instagram_basic,instagram_manage_insights,pages_read_engagement,pages_read_user_content'
-    : 'pages_read_engagement,pages_read_user_content,pages_show_list';
+    ? 'instagram_basic,instagram_manage_insights,pages_read_engagement,pages_read_user_content,pages_show_list,business_management'
+    : 'pages_read_engagement,pages_read_user_content,pages_show_list,business_management';
 
   const redirect = `https://www.facebook.com/v18.0/dialog/oauth?` +
     `client_id=${APP_ID}` +

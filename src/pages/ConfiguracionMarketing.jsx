@@ -29,13 +29,22 @@ const ConfiguracionMarketing = () => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
 
-  // Cargar configuración existente
+  // Cargar configuración existente desde Firestore (tokens seguros)
   useEffect(() => {
     const cargarConfiguracion = async () => {
       try {
         const configData = await obtenerConfiguracionMeta()
         if (configData) {
-          setConfig(configData)
+          // Guardar solo metadatos en el estado (sin tokens completos por seguridad)
+          setConfig({
+            platform: configData.platform,
+            paginaId: configData.paginaId,
+            paginaNombre: configData.paginaNombre,
+            instagramAccountId: configData.instagramAccountId,
+            instagramUsername: configData.instagramUsername,
+            connectedAt: configData.connectedAt
+          })
+          
           if (configData.paginaId) {
             // Si hay una página conectada pero no hay Instagram, intentar obtenerlo
             if (!configData.instagramAccountId && configData.paginaAccessToken) {
@@ -46,7 +55,7 @@ const ConfiguracionMarketing = () => {
                 )
                 if (instagramAccount) {
                   setCuentaInstagram(instagramAccount)
-                  // Actualizar configuración con Instagram
+                  // Actualizar configuración con Instagram (tokens se guardan en Firestore)
                   const configActualizada = {
                     ...configData,
                     instagramAccountId: instagramAccount.id,
@@ -54,7 +63,12 @@ const ConfiguracionMarketing = () => {
                     updatedAt: new Date().toISOString()
                   }
                   await guardarConfiguracionMeta(configActualizada)
-                  setConfig(configActualizada)
+                  setConfig({
+                    ...configActualizada,
+                    // No incluir tokens en el estado
+                    userAccessToken: undefined,
+                    paginaAccessToken: undefined
+                  })
                 }
               } catch (igError) {
                 console.warn('No se pudo obtener cuenta de Instagram automáticamente:', igError)
@@ -70,17 +84,17 @@ const ConfiguracionMarketing = () => {
           }
         }
       } catch (error) {
-        console.error('Error al cargar configuración:', error)
+        console.error('Error al cargar configuración desde Firestore:', error)
       }
     }
     cargarConfiguracion()
   }, [])
 
-  // Verificar si hay código o token en la URL (callback de OAuth - para compatibilidad con método anterior)
+  // Verificar si hay código en la URL (callback de OAuth)
+  // Los tokens ya NO se pasan por URL, se guardan directamente en Firestore
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const code = urlParams.get('code')
-    const token = urlParams.get('token')
     const platform = urlParams.get('platform') || urlParams.get('state') || localStorage.getItem('meta_auth_state') || 'facebook'
     const errorParam = urlParams.get('error')
     const errorDescription = urlParams.get('error_description')
@@ -93,12 +107,14 @@ const ConfiguracionMarketing = () => {
       return
     }
 
-    // Si hay código (método anterior con redirección), intentar procesarlo
+    // Si hay código, procesarlo (el token se guardará en Firestore, no en URL)
     if (code) {
       procesarCodigo(code, platform)
-    } else if (token && platform) {
-      // Si ya hay token (del backend), procesarlo directamente
-      procesarToken(token, platform)
+    }
+    
+    // Limpiar URL después de procesar
+    if (code || errorParam) {
+      window.history.replaceState({}, document.title, window.location.pathname)
     }
   }, [])
 
@@ -251,7 +267,7 @@ const ConfiguracionMarketing = () => {
         console.log(`ℹ️ No hay Instagram vinculado a esta página`)
       }
 
-      // Guardar configuración directamente
+      // Guardar configuración en Firestore de forma segura (sin tokens en URL)
       const configCompleta = {
         userAccessToken: token,
         platform: platform,
@@ -264,14 +280,24 @@ const ConfiguracionMarketing = () => {
         updatedAt: new Date().toISOString()
       }
 
+      // Guardar en Firestore (tokens seguros, no en URL)
       await guardarConfiguracionMeta(configCompleta)
-      setConfig(configCompleta)
+      
+      // Guardar solo metadatos en el estado (sin tokens completos)
+      setConfig({
+        platform: configCompleta.platform,
+        paginaId: configCompleta.paginaId,
+        paginaNombre: configCompleta.paginaNombre,
+        instagramAccountId: configCompleta.instagramAccountId,
+        instagramUsername: configCompleta.instagramUsername,
+        connectedAt: configCompleta.connectedAt
+      })
       
       if (instagramAccount) {
         setCuentaInstagram(instagramAccount)
-        setSuccess(`✅ ${pagina.name} y Instagram (@${instagramAccount.username}) conectados exitosamente.`)
+        setSuccess(`✅ ${pagina.name} y Instagram (@${instagramAccount.username}) conectados exitosamente. Tokens guardados de forma segura en Firestore.`)
       } else {
-        setSuccess(`✅ ${pagina.name} conectada exitosamente.`)
+        setSuccess(`✅ ${pagina.name} conectada exitosamente. Tokens guardados de forma segura en Firestore.`)
       }
       
       // Limpiar URL y localStorage

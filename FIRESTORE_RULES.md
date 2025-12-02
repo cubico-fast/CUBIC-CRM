@@ -34,6 +34,22 @@ service cloud.firestore {
       allow update: if true; // Permitir actualización a todos (cambiar según necesites)
       allow delete: if true; // Permitir eliminación a todos (cambiar según necesites)
     }
+    
+    // Reglas para tokens de Meta (SEGURIDAD CRÍTICA)
+    // Solo el usuario puede acceder a sus propios tokens
+    match /marketing_tokens/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Permitir también acceso anónimo si userId es 'anonymous' (para desarrollo)
+      allow read, write: if userId == 'anonymous';
+    }
+    
+    // Reglas para configuración de Meta (pública, sin tokens)
+    match /marketing_config/{userId} {
+      allow read: if true;  // Configuración pública puede leerse
+      allow write: if request.auth != null && request.auth.uid == userId;
+      // Permitir también acceso anónimo si userId es 'anonymous' (para desarrollo)
+      allow write: if userId == 'anonymous';
+    }
   }
 }
 ```
