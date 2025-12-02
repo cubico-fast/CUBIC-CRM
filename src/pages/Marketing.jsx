@@ -128,18 +128,15 @@ const Marketing = () => {
       const paginaConInstagram = paginas.find(p => p.instagramAccountId && p.access_token)
       if (paginaConInstagram) {
         try {
-          const [info, impressions, reach, profileViews] = await Promise.all([
+          // Solo obtener métricas que funcionan: info y reach
+          const [info, reach] = await Promise.all([
             obtenerInfoInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token),
-            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'impressions', 'day'),
-            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'reach', 'day'),
-            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'profile_views', 'day')
+            obtenerMetricasInstagram(paginaConInstagram.instagramAccountId, paginaConInstagram.access_token, 'reach', 'day')
           ])
 
           nuevasMetricas.instagram = {
             info,
-            impressions,
-            reach,
-            profileViews
+            reach
           }
 
           // Guardar métricas de Instagram en Firestore
@@ -151,17 +148,7 @@ const Marketing = () => {
               media_count: info.media_count,
               username: info.username
             },
-            impressions: impressions.map(m => ({
-              metric: m.name,
-              period: m.period,
-              values: m.values
-            })),
             reach: reach.map(m => ({
-              metric: m.name,
-              period: m.period,
-              values: m.values
-            })),
-            profileViews: profileViews.map(m => ({
               metric: m.name,
               period: m.period,
               values: m.values
@@ -582,10 +569,11 @@ const Marketing = () => {
             const totalReach = metricasReales.instagram.reach?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0) || 0
             valorReal = totalReach > 0 ? `${(totalReach / 1000).toFixed(1)}K` : stat.value
           } else if (metricasReales.instagram?.info && index === 1) {
-            // Engagement Rate
+            // Engagement Rate - Usar reach en lugar de impressions ya que impressions no está disponible
             const followers = metricasReales.instagram.info.followers_count || 0
-            const impressions = metricasReales.instagram.impressions?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0) || 0
-            const engagementRate = followers > 0 ? ((impressions / followers) * 100).toFixed(1) : 0
+            const reach = metricasReales.instagram.reach?.[0]?.values?.reduce((sum, v) => sum + (parseInt(v.value) || 0), 0) || 0
+            // Engagement Rate aproximado basado en alcance vs seguidores
+            const engagementRate = followers > 0 ? ((reach / followers) * 100).toFixed(1) : 0
             valorReal = engagementRate > 0 ? `${engagementRate}%` : stat.value
           } else if (metricasReales.instagram?.info && index === 2) {
             // Crecimiento
