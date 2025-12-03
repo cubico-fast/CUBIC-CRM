@@ -188,20 +188,35 @@ const Dashboard = () => {
     var ventasFiltradas = []
   } else {
     // Log inicial para ver qué fechas se están usando
+    const ventasAnuladas = ventas.filter(v => v.estado === 'Anulada')
     console.log('🔍 Iniciando filtro de ventas:', {
       fechaInicio,
       fechaFin,
       totalVentas: ventas.length,
+      ventasAnuladas: ventasAnuladas.length,
+      ventasAnuladasDetalle: ventasAnuladas.map(v => ({
+        id: v.id,
+        fecha: v.fecha,
+        total: v.total,
+        estado: v.estado
+      })),
       ventas: ventas.map(v => ({ 
         id: v.id, 
         fecha: v.fecha, 
         total: v.total,
+        estado: v.estado,
         tipoFecha: typeof v.fecha
       }))
     })
 
     // Filtrar ventas por rango de fechas seleccionado usando el campo 'fecha' de Firestore
+    // IMPORTANTE: Excluir ventas anuladas del cálculo
     var ventasFiltradas = ventas.filter(venta => {
+      // Excluir ventas anuladas
+      if (venta.estado === 'Anulada') {
+        return false
+      }
+      
       // Usar el campo 'fecha' que se guarda en Firestore, NO createdAt ni updatedAt
       if (!venta.fecha) {
         console.warn('Venta sin campo fecha:', venta.id)
