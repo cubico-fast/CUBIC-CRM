@@ -262,9 +262,14 @@ export const getVentas = async () => {
         }
       }
       
-      // Si aún no hay fecha, registrar advertencia
+      // Si aún no hay fecha, usar fecha actual como último recurso
       if (!fechaNormalizada) {
-        console.warn('Venta sin fecha válida en ningún campo:', doc.id)
+        console.warn('Venta sin fecha válida en ningún campo, usando fecha actual:', doc.id)
+        const hoy = new Date()
+        const year = hoy.getFullYear()
+        const month = String(hoy.getMonth() + 1).padStart(2, '0')
+        const day = String(hoy.getDate()).padStart(2, '0')
+        fechaNormalizada = `${year}-${month}-${day}`
       }
       
       ventas.push({

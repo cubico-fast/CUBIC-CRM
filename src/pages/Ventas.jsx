@@ -58,12 +58,17 @@ const Ventas = () => {
         }
       } catch (error) {
         console.error('Error al cargar ventas:', error)
-        alert('Error al cargar ventas. Por favor, recarga la página.')
+        // Solo mostrar alert si es un error crítico, no para errores menores
+        if (error.message && !error.message.includes('permission')) {
+          alert('Error al cargar ventas. Por favor, recarga la página.')
+        }
         // Fallback para mes de inicio
         const hoy = new Date()
         setCurrentYear(hoy.getFullYear())
         const primerMes = new Date(hoy.getFullYear(), 0, 1)
         setMesInicioSeleccionado(primerMes)
+        // Inicializar con array vacío para evitar errores
+        setVentas([])
       } finally {
         setLoading(false)
       }
