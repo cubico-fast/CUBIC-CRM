@@ -10,17 +10,7 @@ const Ventas = () => {
   const [ventas, setVentas] = useState([])
   const [loading, setLoading] = useState(true)
   
-  // Función para generar datos iniciales
-  const generateInitialVentasMensuales = () => {
-    const mesesIniciales = getLastMonths(6)
-    return mesesIniciales.map((mesInfo, index) => ({
-      mes: mesInfo.mes,
-      ventas: convertValue(12000 + (index * 2000)),
-      objetivo: convertValue(15000)
-    }))
-  }
-  
-  const [ventasMensuales, setVentasMensuales] = useState(() => generateInitialVentasMensuales())
+  const [ventasMensuales, setVentasMensuales] = useState([])
 
   // Cargar ventas desde Firebase al montar el componente
   useEffect(() => {
@@ -40,38 +30,88 @@ const Ventas = () => {
     loadVentas()
   }, [])
 
-  // Generar datos mensuales dinámicos basados en la fecha actual
+  // Calcular ventas mensuales reales basadas en los datos de Firebase
   useEffect(() => {
-    const updateVentasMensuales = async () => {
+    const calcularVentasMensuales = async () => {
       try {
         const networkDate = await getNetworkTime()
         const meses = getLastMonths(6, networkDate)
         
-        // Generar datos dinámicos (puedes conectarlos a datos reales de Firebase)
-        const ventasData = meses.map((mesInfo, index) => ({
-          mes: mesInfo.mes,
-          ventas: convertValue(12000 + (index * 2000)),
-          objetivo: convertValue(15000)
+        // Filtrar solo ventas completadas (excluir anuladas)
+        const ventasCompletadas = ventas.filter(v => v.estado === 'Completada')
+        
+        // Crear un mapa para agrupar ventas por mes
+        const ventasPorMes = new Map()
+        
+        // Inicializar todos los meses con 0
+        meses.forEach(mesInfo => {
+          const mesKey = `${mesInfo.año}-${String(mesInfo.mesNumero).padStart(2, '0')}`
+          ventasPorMes.set(mesKey, {
+            mes: mesInfo.mes,
+            ventas: 0,
+            objetivo: convertValue(15000) // Objetivo fijo por ahora
+          })
+        })
+        
+        // Agrupar ventas por mes
+        ventasCompletadas.forEach(venta => {
+          if (!venta.fecha) return
+          
+          // Normalizar fecha de la venta
+          let fechaVenta = venta.fecha
+          if (typeof fechaVenta === 'string') {
+            if (fechaVenta.includes('T')) {
+              fechaVenta = fechaVenta.split('T')[0]
+            }
+            if (fechaVenta.includes(' ')) {
+              fechaVenta = fechaVenta.split(' ')[0]
+            }
+          }
+          
+          // Extraer año y mes de la fecha
+          const fechaMatch = fechaVenta.match(/^(\d{4})-(\d{2})-(\d{2})/)
+          if (fechaMatch) {
+            const [, year, month] = fechaMatch
+            const mesKey = `${year}-${month}`
+            
+            // Si el mes está en nuestro rango, sumar la venta
+            if (ventasPorMes.has(mesKey)) {
+              const mesData = ventasPorMes.get(mesKey)
+              mesData.ventas += parseFloat(venta.total) || 0
+              ventasPorMes.set(mesKey, mesData)
+            }
+          }
+        })
+        
+        // Convertir el mapa a array y aplicar conversión de moneda
+        const ventasData = Array.from(ventasPorMes.values()).map(mesData => ({
+          mes: mesData.mes,
+          ventas: convertValue(mesData.ventas),
+          objetivo: mesData.objetivo
         }))
         
         setVentasMensuales(ventasData)
       } catch (error) {
-        console.error('Error al obtener fecha de la red:', error)
-        // Fallback
-        const meses = getLastMonths(6)
-        setVentasMensuales(meses.map((mesInfo, index) => ({
-          mes: mesInfo.mes,
-          ventas: convertValue(12000 + (index * 2000)),
-          objetivo: convertValue(15000)
-        })))
+        console.error('Error al calcular ventas mensuales:', error)
+        // Fallback: mostrar meses con 0 ventas
+        try {
+          const networkDate = await getNetworkTime()
+          const meses = getLastMonths(6, networkDate)
+          setVentasMensuales(meses.map(mesInfo => ({
+            mes: mesInfo.mes,
+            ventas: convertValue(0),
+            objetivo: convertValue(15000)
+          })))
+        } catch (fallbackError) {
+          console.error('Error en fallback:', fallbackError)
+        }
       }
     }
     
-    updateVentasMensuales()
-    // Actualizar cada hora
-    const interval = setInterval(updateVentasMensuales, 3600000)
-    return () => clearInterval(interval)
-  }, [convertValue])
+    if (ventas.length > 0 || !loading) {
+      calcularVentasMensuales()
+    }
+  }, [ventas, convertValue, loading])
 
   const [searchTerm, setSearchTerm] = useState('')
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
@@ -360,7 +400,8 @@ const Ventas = () => {
                 backgroundColor: '#fff', 
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px'
-              }} 
+              }}
+              formatter={(value) => formatCurrency(value)}
             />
             <Legend />
             <Area 
