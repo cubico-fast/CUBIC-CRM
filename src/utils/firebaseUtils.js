@@ -185,12 +185,20 @@ export const getVentas = async () => {
         if (data.createdAt?.toDate) {
           // Es un Timestamp de Firestore
           const fechaCreated = data.createdAt.toDate()
-          // Usar métodos UTC para evitar problemas de zona horaria
-          // O mejor aún, usar la fecha local pero asegurarse de que sea correcta
+          // Usar la fecha local (no UTC) para obtener el día correcto según la zona horaria del usuario
           const year = fechaCreated.getFullYear()
           const month = String(fechaCreated.getMonth() + 1).padStart(2, '0')
           const day = String(fechaCreated.getDate()).padStart(2, '0')
           fechaNormalizada = `${year}-${month}-${day}`
+          
+          // Log para debugging (solo para ventas recientes)
+          if (fechaCreated.getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) {
+            console.log(`📅 Venta ${doc.id}: usando createdAt de Firestore`, {
+              createdAt: data.createdAt.toDate().toISOString(),
+              fechaNormalizada,
+              fechaOriginal: data.fecha
+            })
+          }
         } else if (data.createdAt instanceof Date) {
           const year = data.createdAt.getFullYear()
           const month = String(data.createdAt.getMonth() + 1).padStart(2, '0')
