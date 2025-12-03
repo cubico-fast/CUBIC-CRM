@@ -347,7 +347,7 @@ const Productos = () => {
           imagenes: imagenesLimpias,
           precioHistorial: [{
             precio: nuevoPrecio,
-            fecha: getCurrentDate(),
+            fecha: getCurrentDateSync(),
             usuario: 'Admin'
           }],
           tallas: newProduct.tallas || [],
@@ -511,7 +511,7 @@ const Productos = () => {
       imagenes: producto.imagenes ? [...producto.imagenes] : [],
       precioHistorial: [{
         precio: producto.precio,
-        fecha: getCurrentDate(),
+        fecha: getCurrentDateSync(),
         usuario: 'Admin'
       }]
     }
