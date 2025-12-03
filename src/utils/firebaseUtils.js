@@ -185,7 +185,8 @@ export const getVentas = async () => {
         if (data.createdAt?.toDate) {
           // Es un Timestamp de Firestore
           const fechaCreated = data.createdAt.toDate()
-          // Convertir a fecha en formato YYYY-MM-DD
+          // Usar métodos UTC para evitar problemas de zona horaria
+          // O mejor aún, usar la fecha local pero asegurarse de que sea correcta
           const year = fechaCreated.getFullYear()
           const month = String(fechaCreated.getMonth() + 1).padStart(2, '0')
           const day = String(fechaCreated.getDate()).padStart(2, '0')
@@ -198,6 +199,7 @@ export const getVentas = async () => {
         } else if (typeof data.createdAt === 'string') {
           // Si createdAt es un string ISO, extraer la fecha
           if (data.createdAt.includes('T')) {
+            // Extraer solo la parte de la fecha antes de la T
             fechaNormalizada = data.createdAt.split('T')[0]
           } else {
             fechaNormalizada = data.createdAt
