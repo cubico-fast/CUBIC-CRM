@@ -89,10 +89,15 @@ const Ventas = () => {
     )
   })
 
-  const totalVentas = ventas.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0)
-  const ventasCompletadas = ventas.filter(v => v.estado === 'Completada').length
-  const ventasAnuladas = ventas.filter(v => v.estado === 'Anulada').length
-  const totalProductosVendidos = ventas.reduce((sum, v) => sum + (parseInt(v.totalProductos) || 0), 0)
+  // Calcular totales excluyendo ventas anuladas
+  const ventasCompletadasList = ventas.filter(v => v.estado === 'Completada')
+  const ventasAnuladasList = ventas.filter(v => v.estado === 'Anulada')
+  
+  const totalVentas = ventasCompletadasList.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0)
+  const ventasCompletadas = ventasCompletadasList.length
+  const ventasAnuladas = ventasAnuladasList.length
+  const totalEliminados = ventasAnuladasList.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0)
+  const totalProductosVendidos = ventasCompletadasList.reduce((sum, v) => sum + (parseInt(v.totalProductos) || 0), 0)
 
   const handleVerDetalle = (venta) => {
     setVentaSeleccionada(venta)
@@ -126,12 +131,13 @@ const Ventas = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Ventas</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalVentas)}</p>
+              <p className="text-xs text-gray-500 mt-1">{ventasCompletadas} venta(s) completada(s)</p>
             </div>
             <div className="p-3 rounded-lg bg-primary-100">
               <DollarSign className="text-primary-600" size={24} />
@@ -152,8 +158,9 @@ const Ventas = () => {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Ventas Anuladas</p>
-              <p className="text-2xl font-bold text-red-600">{ventasAnuladas}</p>
+              <p className="text-sm text-gray-600 mb-1">Total Eliminados</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(totalEliminados)}</p>
+              <p className="text-xs text-gray-500 mt-1">{ventasAnuladas} venta(s) anulada(s)</p>
             </div>
             <div className="p-3 rounded-lg bg-red-100">
               <XCircle className="text-red-600" size={24} />
