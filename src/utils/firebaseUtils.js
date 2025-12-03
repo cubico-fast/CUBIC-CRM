@@ -177,17 +177,15 @@ export const getVentas = async () => {
     querySnapshot.forEach((doc) => {
       const data = doc.data()
       
-      // Normalizar el campo 'fecha' - priorizar createdAt de Firestore si está disponible
-      // porque es más confiable (timestamp del servidor)
+      // Normalizar el campo 'fecha' - PRIORIZAR createdAt de Firestore (timestamp del servidor - más confiable)
       let fechaNormalizada = null
       
-      // PRIMERO: Intentar usar createdAt (timestamp del servidor - más confiable)
+      // PRIMERO: Usar createdAt de Firestore (timestamp del servidor - fecha real de creación)
       if (data.createdAt) {
         if (data.createdAt?.toDate) {
           // Es un Timestamp de Firestore
           const fechaCreated = data.createdAt.toDate()
-          // Convertir a fecha en zona horaria de Perú (UTC-5)
-          // Obtener la fecha en formato YYYY-MM-DD considerando la zona horaria
+          // Convertir a fecha en formato YYYY-MM-DD
           const year = fechaCreated.getFullYear()
           const month = String(fechaCreated.getMonth() + 1).padStart(2, '0')
           const day = String(fechaCreated.getDate()).padStart(2, '0')
@@ -207,7 +205,7 @@ export const getVentas = async () => {
         }
       }
       
-      // SEGUNDO: Si no hay createdAt o no se pudo usar, usar el campo 'fecha'
+      // SEGUNDO: Si no hay createdAt, usar el campo 'fecha' manual
       if (!fechaNormalizada && data.fecha) {
         let fechaVenta = data.fecha
         
@@ -243,9 +241,8 @@ export const getVentas = async () => {
         }
       }
       
-      // Si aún no hay fecha normalizada, usar updatedAt como último recurso
+      // TERCERO: Si aún no hay fecha, usar updatedAt como último recurso
       if (!fechaNormalizada && data.updatedAt) {
-        console.warn('Venta sin fecha válida, usando updatedAt como último recurso:', doc.id)
         if (data.updatedAt?.toDate) {
           const fechaUpdated = data.updatedAt.toDate()
           const year = fechaUpdated.getFullYear()
@@ -257,7 +254,7 @@ export const getVentas = async () => {
       
       // Si aún no hay fecha, registrar advertencia
       if (!fechaNormalizada) {
-        console.warn('Venta sin fecha válida en ningún campo:', doc.id, data)
+        console.warn('Venta sin fecha válida en ningún campo:', doc.id)
       }
       
       ventas.push({
