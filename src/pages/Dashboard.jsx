@@ -192,7 +192,12 @@ const Dashboard = () => {
       fechaInicio,
       fechaFin,
       totalVentas: ventas.length,
-      ventas: ventas.map(v => ({ id: v.id, fecha: v.fecha, total: v.total }))
+      ventas: ventas.map(v => ({ 
+        id: v.id, 
+        fecha: v.fecha, 
+        total: v.total,
+        tipoFecha: typeof v.fecha
+      }))
     })
 
     // Filtrar ventas por rango de fechas seleccionado usando el campo 'fecha' de Firestore
@@ -280,39 +285,53 @@ const Dashboard = () => {
         return false
       }
       
+      // Extraer año y mes de las fechas para validación adicional
+      const [ventaYear, ventaMonth] = fechaVentaNormalizada.split('-').map(Number)
+      const [inicioYear, inicioMonth] = fechaInicioNormalizada.split('-').map(Number)
+      const [finYear, finMonth] = fechaFinNormalizada.split('-').map(Number)
+      
+      // Validación estricta: la venta debe estar en el mismo mes que el rango seleccionado
+      // Esto previene que ventas de meses anteriores se cuenten
       const estaEnRango = fechaVentaNormalizada >= fechaInicioNormalizada && fechaVentaNormalizada <= fechaFinNormalizada
       
-      // Log detallado solo para ventas que están en el rango o tienen problemas
-      if (estaEnRango) {
-        console.log(`✅ Venta ${venta.id} incluida en rango:`, {
+      // Validación adicional: asegurar que el mes de la venta esté dentro del rango de meses del filtro
+      // Si el rango abarca múltiples meses, verificar que la venta esté en alguno de esos meses
+      const mesesEnRango = []
+      let currentDate = new Date(inicioYear, inicioMonth - 1, 1)
+      const endDate = new Date(finYear, finMonth - 1, 1)
+      while (currentDate <= endDate) {
+        mesesEnRango.push(`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`)
+        currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+      }
+      const mesVenta = `${ventaYear}-${String(ventaMonth).padStart(2, '0')}`
+      const mesValido = mesesEnRango.includes(mesVenta)
+      
+      // Solo incluir si está en el rango Y el mes es válido
+      const resultadoFinal = estaEnRango && mesValido
+      
+      // Log detallado para debugging
+      if (resultadoFinal) {
+        console.log(`✅ Venta ${venta.id} incluida:`, {
           fechaVentaOriginal: venta.fecha,
           fechaVentaNormalizada,
+          mesVenta,
           fechaInicio: fechaInicioNormalizada,
           fechaFin: fechaFinNormalizada,
+          mesesEnRango,
           total: venta.total
         })
-      } else if (fechaVentaNormalizada && fechaInicioNormalizada && fechaFinNormalizada) {
-        // Solo loggear si la fecha está cerca del rango (dentro de 5 días) para debugging
-        const fechaVentaDate = new Date(fechaVentaNormalizada)
-        const fechaInicioDate = new Date(fechaInicioNormalizada)
-        const fechaFinDate = new Date(fechaFinNormalizada)
-        const diasDiferenciaInicio = Math.abs((fechaVentaDate - fechaInicioDate) / (1000 * 60 * 60 * 24))
-        const diasDiferenciaFin = Math.abs((fechaVentaDate - fechaFinDate) / (1000 * 60 * 60 * 24))
-        
-        if (diasDiferenciaInicio <= 5 || diasDiferenciaFin <= 5) {
-          console.log(`⚠️ Venta ${venta.id} cerca del rango pero excluida:`, {
-            fechaVentaOriginal: venta.fecha,
-            fechaVentaNormalizada,
-            fechaInicio: fechaInicioNormalizada,
-            fechaFin: fechaFinNormalizada,
-            diasDiferenciaInicio: Math.round(diasDiferenciaInicio),
-            diasDiferenciaFin: Math.round(diasDiferenciaFin),
-            total: venta.total
-          })
-        }
+      } else if (!mesValido && estaEnRango) {
+        // Si está en el rango pero el mes no es válido, es un problema
+        console.warn(`⚠️ Venta ${venta.id} en rango pero mes inválido:`, {
+          fechaVentaOriginal: venta.fecha,
+          fechaVentaNormalizada,
+          mesVenta,
+          mesesEnRango,
+          total: venta.total
+        })
       }
       
-      return estaEnRango
+      return resultadoFinal
     })
   }
 
