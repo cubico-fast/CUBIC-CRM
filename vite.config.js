@@ -6,7 +6,7 @@ import { join } from 'path'
 // Detectar el entorno - Vercel siempre tiene VERCEL=1
 const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV
 const isNetlify = process.env.NETLIFY === 'true'
-const isGitHubPages = process.env.GITHUB_PAGES === 'true' || process.env.GITHUB_ACTIONS
+const isGitHubPages = process.env.GITHUB_PAGES === 'true' || process.env.GITHUB_ACTIONS || process.env.CI
 
 // Determinar el base path
 let basePath = '/'
