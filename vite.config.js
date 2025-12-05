@@ -35,9 +35,9 @@ console.log('🔧 Build config:', {
 export default defineConfig({
   plugins: [
     react(),
-    // Plugin para crear 404.html desde index.html después del build
+    // Plugin para ajustar rutas en index.html y crear 404.html después del build
     {
-      name: 'copy-404',
+      name: 'fix-paths',
       closeBundle() {
         const distPath = join(process.cwd(), 'dist')
         const indexPath = join(distPath, 'index.html')
@@ -49,14 +49,36 @@ export default defineConfig({
           // Ajustar las rutas de los assets para que funcionen desde cualquier ruta
           // Reemplazar rutas absolutas que empiezan con /assets/ o /favicon.svg para que sean relativas o con basePath
           const repoName = '/CUBIC-CRM'
-          indexContent = indexContent.replace(
-            /(src|href)="\/(assets\/[^"]+|favicon\.svg|vite\.svg)"/g,
-            (match, attr, path) => {
-              // Si el basePath incluye el repo, mantener la ruta absoluta con el prefijo
-              if (basePath.includes('CUBIC-CRM')) {
-                return `${attr}="${basePath}${path.substring(1)}"`
+          
+          // Función para ajustar rutas
+          const fixPaths = (content) => {
+            return content.replace(
+              /(src|href)="\/(assets\/[^"]+|favicon\.svg|vite\.svg)"/g,
+              (match, attr, path) => {
+                // Si el basePath incluye el repo, usar ruta absoluta con el prefijo
+                if (basePath.includes('CUBIC-CRM')) {
+                  return `${attr}="${basePath}${path.substring(1)}"`
+                }
+                // Si no, usar ruta relativa
+                return `${attr}="${path.substring(1)}"`
               }
-              // Si no, usar ruta relativa desde la raíz
+            )
+          }
+          
+          // Ajustar rutas en index.html si es para GitHub Pages
+          if (basePath.includes('CUBIC-CRM')) {
+            indexContent = fixPaths(indexContent)
+            writeFileSync(indexPath, indexContent, 'utf-8')
+            console.log('✅ Rutas ajustadas en index.html para GitHub Pages')
+          }
+          
+          // Crear 404.html con rutas ajustadas
+          let contentFor404 = readFileSync(indexPath, 'utf-8')
+          
+          // Para 404.html, usar rutas relativas para que funcionen desde cualquier ruta
+          contentFor404 = contentFor404.replace(
+            /(src|href)="(\/CUBIC-CRM\/)?(assets\/[^"]+|favicon\.svg|vite\.svg)"/g,
+            (match, attr, base, path) => {
               return `${attr}="${path}"`
             }
           )
